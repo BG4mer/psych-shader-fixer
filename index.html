@@ -3,157 +3,167 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GODLIKE Shader Fixer — Device Mode & Aspect Ratios</title>
+<title>GODLIKE Shader Fixer — Single File</title>
 <meta name="color-scheme" content="dark">
 <style>
-  /* ---------- Fonts & base ---------- */
-  @font-face{font-family:"Xenomono";src:local("Courier New"),local("monospace");}
-  :root{
-    --bg1:#050616; --bg2:#07132a; --accent1:#4ee0ff; --accent2:#b36bff;
-    --glass: rgba(255,255,255,0.04); --muted:#9fb9ff66;
-    --success:#6ef0a2; --danger:#ff6b6b;
-    --ui-scale:1;
-  }
-  html,body{height:100%;margin:0;padding:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));font-family:Xenomono,monospace;color:#e9eefc;overflow:hidden;}
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  /* ---------- animated background ---------- */
-  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
-    background:
-      radial-gradient(800px 400px at 10% 20%, rgba(123,64,255,0.10), transparent 10%),
-      radial-gradient(600px 300px at 80% 80%, rgba(78,224,255,0.08), transparent 10%);
-    mix-blend-mode:screen;
-  }
-  .blob{position:absolute;border-radius:50%; filter:blur(72px); opacity:.55; transform:translate3d(0,0,0); animation: floaty linear infinite; will-change:transform;}
-  .blob.a{width:620px;height:620px; left:-8%; top:2%; background:linear-gradient(45deg,#6b3dff,#00f0ff); animation-duration:26s;}
-  .blob.b{width:420px;height:420px; right:-8%; bottom:-6%; background:linear-gradient(45deg,#ff66b3,#6b3dff); animation-duration:30s; opacity:.36;}
-  @keyframes floaty{0%{transform:translateY(0) rotate(0deg) scale(1)}50%{transform:translateY(-48px) rotate(180deg) scale(1.04)}100%{transform:translateY(0) rotate(360deg) scale(1)}}
+/* ----------------- Theme & fonts ----------------- */
+:root{
+  --bg1:#060717; --bg2:#07162a;
+  --accent1:#4ee0ff; --accent2:#b36bff;
+  --muted:#9fb9ff66; --glass:rgba(255,255,255,0.04);
+  --success:#6ef0a2; --danger:#ff6b6b;
+  --ui-scale:1;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;padding:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,monospace;color:#eaf6ff;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;padding:18px}
 
-  /* ---------- wrapper & panels ---------- */
-  .wrap{position:relative;z-index:2;width:100%;max-width:1180px;margin:18px auto;padding:18px;transform:scale(var(--ui-scale));transition:transform .25s ease}
-  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:14px;box-shadow:0 18px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(6px)}
-  header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  h1{margin:0;font-size:20px;color:var(--accent1);letter-spacing:0.6px;text-shadow:0 6px 30px rgba(78,224,255,0.06)}
-  .muted{color:var(--muted);font-size:12px}
+/* animated background */
+.bgwrap{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(72px);opacity:.55;will-change:transform;mix-blend-mode:screen}
+.blob.a{width:760px;height:760px;left:-10%;top:2%;background:linear-gradient(45deg,#6b3dff,#00f0ff);animation:floaty 28s linear infinite}
+.blob.b{width:520px;height:520px;right:-8%;bottom:-6%;background:linear-gradient(45deg,#ff66b3,#6b3dff);animation:floaty 32s linear infinite;opacity:.36}
+@keyframes floaty{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-60px) rotate(180deg)}100%{transform:translateY(0) rotate(360deg)}}
 
-  /* ---------- controls ---------- */
-  .controls{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;align-items:center}
-  .btn{border:0;padding:12px 14px;border-radius:12px;cursor:pointer;font-weight:700;letter-spacing:.6px;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041826;box-shadow:0 10px 30px rgba(179,107,255,0.12);transition:transform .18s ease,box-shadow .18s ease}
-  .btn:active{transform:translateY(1px) scale(.998)}
-  .btn.ghost{background:transparent;color:#cfe9ff;border:1px solid rgba(255,255,255,0.04);box-shadow:none}
-  .fileWrap{position:relative;overflow:hidden;display:inline-block}
-  input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* main container */
+.app{position:relative;z-index:2;width:100%;max-width:1200px;transform:scale(var(--ui-scale));transition:transform .25s}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:14px;box-shadow:0 30px 90px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px)}
+.header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.logo{width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(0,0,0,0.35)}
+.title{flex:1}
+.h1{margin:0;font-size:20px;color:var(--accent1);letter-spacing:.6px}
+.lead{margin:0;color:var(--muted);font-size:13px}
 
-  /* ---------- grid layout ---------- */
-  .grid{display:grid;grid-template-columns:1fr 460px;gap:12px;margin-top:10px;align-items:start}
-  @media (max-width:980px){.grid{grid-template-columns:1fr}.rightCol{order:2}}
-  .editorBox{min-height:420px;border-radius:12px;overflow:hidden;position:relative}
-  .ln{position:absolute;left:0;top:0;bottom:0;width:54px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0));color:#9fb9ff66;padding:10px;box-sizing:border-box;font-size:12px;line-height:18px;user-select:none}
-  .codeArea{margin-left:54px;height:100%;width:100%;box-sizing:border-box;background:#081029;color:#dff3ff;font-family:monospace;font-size:13px;padding:10px;outline:none;resize:none;overflow:auto;line-height:18px;white-space:pre;caret-color:var(--accent1)}
-  .codeArea[contenteditable]{-webkit-user-select:text}
+/* controls */
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;align-items:center}
+.btn{border:0;padding:12px 14px;border-radius:12px;cursor:pointer;font-weight:800;letter-spacing:.6px;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041826;box-shadow:0 8px 30px rgba(179,107,255,0.12);transition:transform .16s,box-shadow .16s}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:#cfe9ff;border:1px solid rgba(255,255,255,0.04);box-shadow:none}
+.fileWrap{position:relative;display:inline-block}
+input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
 
-  /* ---------- preview card & canvas ---------- */
-  .previewCard{padding:10px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));min-height:260px;position:relative;overflow:hidden}
-  .previewStage{display:flex;align-items:center;justify-content:center;height:100%;gap:12px}
-  #glcanvas{border-radius:8px;background:#000;display:block;max-width:100%;}
+/* layout */
+.grid{display:grid;grid-template-columns:1fr 460px;gap:12px;align-items:start}
+@media (max-width:980px){ .grid{grid-template-columns:1fr} .rightCol{order:2} }
 
-  /* ---------- UI niceties ---------- */
-  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px;justify-content:space-between}
-  .log{height:140px;overflow:auto;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;font-size:12px;color:#cfe9ff;white-space:pre-wrap}
-  .progressWrap{height:8px;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden}
-  .progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width .4s cubic-bezier(.2,.9,.2,1);box-shadow:0 6px 20px rgba(78,224,255,0.08)}
-  .confetti{position:fixed;z-index:9999;pointer-events:none}
+/* editor */
+.editorBox{min-height:460px;border-radius:12px;overflow:hidden;position:relative}
+.ln{position:absolute;left:0;top:0;bottom:0;width:54px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));color:#9fb9ff66;padding:10px;box-sizing:border-box;font-size:12px;line-height:18px;user-select:none}
+.codeArea{margin-left:54px;height:100%;width:100%;box-sizing:border-box;background:#061029;color:#dff3ff;font-family:ui-monospace,monospace;font-size:13px;padding:10px;outline:none;resize:none;overflow:auto;line-height:18px;white-space:pre;caret-color:var(--accent1)}
+.codeArea[contenteditable]{-webkit-user-select:text}
 
-  /* ---------- device modal ---------- */
-  .modalBack{position:fixed;inset:0;background:rgba(2,6,16,0.6);z-index:9998;display:flex;align-items:center;justify-content:center}
-  .modal{width:92%;max-width:820px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:14px;box-shadow:0 30px 90px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.04);transform-origin:center;animation:pop .32s cubic-bezier(.2,.9,.2,1)}
-  @keyframes pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-  .modeRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
-  .modeCard{flex:1;min-width:160px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.03);transition:transform .18s ease,box-shadow .18s ease}
-  .modeCard:hover{transform:translateY(-6px);box-shadow:0 18px 50px rgba(0,0,0,0.5)}
-  .aspectGrid{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .aspect{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.03);font-weight:700}
-  .aspect.selected{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041826}
+/* preview */
+.previewCard{padding:10px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));min-height:260px;position:relative;overflow:hidden}
+.previewStage{display:flex;align-items:center;justify-content:center;height:100%;gap:12px}
+#glcanvas{border-radius:8px;background:#000;display:block;max-width:100%}
 
-  /* ---------- tiny responsive tweaks ---------- */
-  @media (max-width:600px){
-    :root{--ui-scale:0.95}
-  }
+/* logs */
+.log{height:140px;overflow:auto;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;font-size:12px;color:#cfe9ff;white-space:pre-wrap}
 
-  footer{position:fixed;left:18px;bottom:18px;z-index:5;font-size:12px;color:var(--muted)}
+/* progress */
+.progressWrap{height:8px;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden}
+.progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width .4s cubic-bezier(.2,.9,.2,1);box-shadow:0 6px 20px rgba(78,224,255,0.08)}
+
+/* modal device chooser */
+.modalBack{position:fixed;inset:0;background:rgba(2,6,16,0.65);z-index:9998;display:flex;align-items:center;justify-content:center}
+.modal{width:92%;max-width:820px;padding:18px;border-radius:14px;animation:pop .32s cubic-bezier(.2,.9,.2,1)}
+@keyframes pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.modeRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.modeCard{flex:1;min-width:160px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.03);transition:transform .18s,box-shadow .18s}
+.modeCard:hover{transform:translateY(-6px);box-shadow:0 18px 50px rgba(0,0,0,0.5)}
+.aspectGrid{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.aspect{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.03);font-weight:800}
+.aspect.selected{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041826}
+
+/* confetti */
+.confetti{position:fixed;z-index:9999;pointer-events:none}
+
+/* micro animations */
+.pulse{animation:pulse 1.6s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+
+/* small */
+.muted{color:var(--muted);font-size:12px}
+.small{font-size:12px}
+footer{position:fixed;left:18px;bottom:18px;z-index:5;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
 
-<div class="bg" aria-hidden="true"><div class="blob a"></div><div class="blob b"></div></div>
+<div class="bgwrap" aria-hidden="true"><div class="blob a"></div><div class="blob b"></div></div>
 
-<!-- Device Mode Modal (appears at startup) -->
-<div id="deviceModal" class="modalBack" role="dialog" aria-modal="true" aria-label="Choose device mode">
+<!-- Device selection modal -->
+<div id="deviceModal" class="modalBack" role="dialog" aria-modal="true">
   <div class="modal panel">
-    <h2 style="margin:0">Choose your device mode</h2>
-    <p class="muted" style="margin-top:6px">Pick PC for desktop layout. Pick Mobile to choose an aspect ratio (screen orientation). You can change this later from the UI.</p>
+    <h2 style="margin:0">Welcome — Choose Device Mode</h2>
+    <p class="muted" style="margin-top:6px">PC: instant desktop layout. Mobile: pick an aspect ratio (the app will resize to match).</p>
 
-    <div class="modeRow" style="margin-top:12px">
+    <div class="modeRow">
       <div id="pcMode" class="modeCard">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(90deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.25)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="1.5" stroke="#041826" stroke-width="1.2"/><rect x="7" y="17" width="10" height="1.6" rx="0.4" stroke="#041826" stroke-width="1"/></svg></div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(90deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="1.5" stroke="#041826" stroke-width="1.2"/></svg>
+          </div>
           <div>
-            <div style="font-weight:800">PC User</div>
-            <div class="muted small" style="margin-top:4px">Optimized desktop layout. Press and forget — instant setup.</div>
+            <div style="font-weight:900">PC User</div>
+            <div class="muted small" style="margin-top:6px">Instant desktop layout — press to continue.</div>
           </div>
         </div>
       </div>
 
       <div id="mobileMode" class="modeCard">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(90deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.25)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="#041826" stroke-width="1.2"/><rect x="10.5" y="18.5" width="3" height="0.9" rx="0.4" stroke="#041826" stroke-width="1"/></svg></div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(90deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="#041826" stroke-width="1.2"/></svg>
+          </div>
           <div>
-            <div style="font-weight:800">Mobile User</div>
-            <div class="muted small" style="margin-top:4px">Select an aspect ratio to emulate device orientation and preview behavior.</div>
+            <div style="font-weight:900">Mobile User</div>
+            <div class="muted small" style="margin-top:6px">Pick an aspect ratio. The preview and app scale to match.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Aspect ratio chooser for Mobile -->
     <div id="aspectChooser" style="display:none;margin-top:12px">
-      <div class="muted small">Pick an aspect ratio (screen orientation):</div>
-      <div class="aspectGrid" style="margin-top:10px">
-        <div class="aspect" data-aspect="9/16">9:16 (tall)</div>
-        <div class="aspect" data-aspect="16/9">16:9 (wide)</div>
-        <div class="aspect" data-aspect="3/2">3:2</div>
+      <div class="muted small">Pick an aspect ratio to emulate:</div>
+      <div class="aspectGrid">
+        <div class="aspect" data-aspect="16/9">16:9 (land)</div>
+        <div class="aspect" data-aspect="9/16">9:16 (portrait)</div>
+        <div class="aspect" data-aspect="18/9">18:9</div>
+        <div class="aspect" data-aspect="20/9">20:9</div>
         <div class="aspect" data-aspect="4/3">4:3</div>
-        <div class="aspect" data-aspect="1/1">1:1 (square)</div>
+        <div class="aspect" data-aspect="3/4">3:4</div>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
         <button id="mobileCancel" class="btn ghost">Cancel</button>
         <button id="mobileConfirm" class="btn">Confirm</button>
       </div>
     </div>
 
-    <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button id="pcQuick" class="btn">PC — Quick Start</button>
-      <button id="chooseMobile" class="btn ghost">Mobile — Choose Aspect</button>
+      <button id="chooseMobile" class="btn ghost">Mobile — Select Aspect</button>
     </div>
   </div>
 </div>
 
-<!-- Main App -->
-<div class="wrap" id="appWrap" role="main" aria-live="polite">
+<!-- Main app -->
+<div class="app">
   <div class="panel">
-    <header>
-      <div style="width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.4)">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M2 12l3-3 4 4 8-8 5 5" stroke="#041826" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="header">
+      <div class="logo" aria-hidden>
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><path d="M2 12l3-3 4 4 8-8 5 5" stroke="#041826" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div style="flex:1">
-        <h1>GODLIKE Shader Fixer</h1>
-        <div class="muted">Fix GLSL & Psych (.hx) fragment shaders — live preview, aspect emulation, and massive animations.</div>
+      <div class="title">
+        <div class="h1">GODLIKE Shader Fixer</div>
+        <div class="lead">Fix GLSL & Psych (.hx) fragment shaders — live preview, aspect emulation, insane animations.</div>
       </div>
       <div style="width:160px;text-align:right">
         <div class="muted small">Mode</div>
-        <div id="modeLabel" style="margin-top:6px;font-weight:800;color:var(--accent1)">—</div>
-        <div style="margin-top:4px"><button id="changeMode" class="btn ghost" style="font-size:12px;padding:8px 10px">Change Mode</button></div>
+        <div id="modeLabel" style="margin-top:6px;font-weight:900;color:var(--accent1)">—</div>
+        <div style="margin-top:6px"><button id="changeMode" class="btn ghost" style="padding:8px 10px;font-size:12px">Change Mode</button></div>
       </div>
-    </header>
+    </div>
 
     <div class="controls">
       <div class="fileWrap">
@@ -171,13 +181,11 @@
       <!-- Editor -->
       <div>
         <div class="editorBox panel" style="padding:12px">
-          <div class="toolbar">
-            <div>
-              <span class="muted small">Shader Editor</span>
-              <span id="langBadge" class="muted small" style="margin-left:10px">GLSL / Haxe</span>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div><span class="muted small">Shader Editor</span> <span class="muted small" id="langBadge" style="margin-left:8px">GLSL / Haxe</span></div>
             <div style="display:flex;gap:8px;align-items:center">
               <div class="muted small">Lines: <span id="lineCount">0</span></div>
+              <div style="width:10px"></div>
               <div class="muted small">Chars: <span id="charCount">0</span></div>
             </div>
           </div>
@@ -197,7 +205,7 @@
       <!-- Preview & logs -->
       <div class="rightCol">
         <div class="previewCard panel">
-          <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="muted small">Live Preview</div>
             <div style="display:flex;gap:8px;align-items:center">
               <div class="muted small">Aspect: <strong id="aspectLabel">--</strong></div>
@@ -213,9 +221,9 @@
         <div class="panel" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <div class="muted small">Realtime Output / Fix Log</div>
-            <div style="display:flex;gap:8px">
-              <button id="copyLog" class="btn ghost small">Copy</button>
-              <button id="clearLog" class="btn ghost small">Clear</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="copyLog" class="btn ghost small" style="padding:8px 10px">Copy</button>
+              <button id="clearLog" class="btn ghost small" style="padding:8px 10px">Clear</button>
             </div>
           </div>
           <div class="log" id="log"></div>
@@ -226,12 +234,10 @@
 </div>
 
 <canvas id="confettiCanvas" class="confetti"></canvas>
-<footer>Use Change Mode to re-open device chooser.</footer>
+<footer class="muted small">Tip: Ctrl/Cmd+S downloads fixed shader.</footer>
 
 <script>
-/* ============================
-   Globals & UI references
-   ============================ */
+/* ----------------- References ----------------- */
 const deviceModal = document.getElementById('deviceModal');
 const pcMode = document.getElementById('pcMode');
 const mobileMode = document.getElementById('mobileMode');
@@ -239,8 +245,8 @@ const chooseMobile = document.getElementById('chooseMobile');
 const pcQuick = document.getElementById('pcQuick');
 const aspectChooser = document.getElementById('aspectChooser');
 const aspectButtons = document.querySelectorAll('.aspectGrid .aspect');
-const mobileConfirm = document.getElementById('mobileConfirm');
-const mobileCancel = document.getElementById('mobileCancel');
+const mobileConfirm = document.getElementById('mobileConfirm') || document.getElementById('mobileConfirm');
+const mobileCancel = document.getElementById('mobileCancel') || document.getElementById('mobileCancel');
 const modeLabel = document.getElementById('modeLabel');
 const changeModeBtn = document.getElementById('changeMode');
 const aspectLabel = document.getElementById('aspectLabel');
@@ -261,49 +267,55 @@ const glcanvas = document.getElementById('glcanvas');
 const confettiCanvas = document.getElementById('confettiCanvas');
 
 let appMode = null; // 'pc' or 'mobile'
-let chosenAspect = 16/9; // default
+let chosenAspect = 16/9;
 let chosenAspectText = '16:9';
 let fitToContainer = true;
 let currentFilename = 'fixed_shader.frag';
 let fixedShaderText = '';
 
-/* ======= helpers ======= */
-function log(msg, level='info'){ const time = new Date().toLocaleTimeString(); const prefix = level==='err' ? '[ERROR]' : level==='warn' ? '[WARN]' : '[OK]'; logEl.textContent = time + ' ' + prefix + ' ' + msg + '\n' + logEl.textContent; }
+/* ----------------- Utilities ----------------- */
+function log(msg, level='info'){
+  const time = new Date().toLocaleTimeString();
+  const prefix = level==='err' ? '[ERROR]' : level==='warn' ? '[WARN]' : '[OK]';
+  logEl.textContent = `${time} ${prefix} ${msg}\n` + logEl.textContent;
+}
 function setProgress(p){ progressEl.style.width = p + '%'; }
 function setModeLabel(){ modeLabel.textContent = appMode === 'pc' ? 'PC User' : 'Mobile User'; aspectLabel.textContent = chosenAspectText; }
 
-/* ========= Device modal interactions ========= */
+/* ----------------- Device modal behavior ----------------- */
 function closeModal(){ deviceModal.style.display = 'none'; }
 function openModal(){ deviceModal.style.display = 'flex'; }
 
-pcQuick.addEventListener('click', ()=>{ appMode='pc'; chosenAspect = 16/9; chosenAspectText='16:9'; setModeLabel(); closeModal(); log('Mode: PC (quick)'); });
-pcMode.addEventListener('click', ()=>{ appMode='pc'; chosenAspect = 16/9; chosenAspectText='16:9'; setModeLabel(); closeModal(); log('Mode: PC (selected)'); });
+pcQuick.addEventListener('click', ()=>{ appMode='pc'; chosenAspect = 16/9; chosenAspectText='16:9'; setModeLabel(); closeModal(); log('Mode: PC (quick)'); adjustLayoutForAspect(); });
+pcMode.addEventListener('click', ()=>{ appMode='pc'; chosenAspect = 16/9; chosenAspectText='16:9'; setModeLabel(); closeModal(); log('Mode: PC selected'); adjustLayoutForAspect(); });
+chooseMobile.addEventListener('click', ()=>{ showAspects(); });
+mobileMode.addEventListener('click', ()=>{ showAspects(); });
 
-chooseMobile.addEventListener('click', ()=>{ aspectChooser.style.display='block'; });
-mobileMode.addEventListener('click', ()=>{ aspectChooser.style.display='block'; });
+function showAspects(){ document.getElementById('aspectChooser').style.display='block'; }
+mobileCancel && mobileCancel.addEventListener('click', ()=>{ document.getElementById('aspectChooser').style.display='none'; });
 
 let selectedAspectBtn = null;
-aspectButtons.forEach(b=>{
-  b.addEventListener('click', ()=>{ if(selectedAspectBtn) selectedAspectBtn.classList.remove('selected'); b.classList.add('selected'); selectedAspectBtn = b; });
+document.querySelectorAll('.aspectGrid .aspect').forEach(b=>{
+  b.addEventListener('click', ()=>{ if(selectedAspectBtn) selectedAspectBtn.classList.remove('selected'); b.classList.add('selected'); selectedAspectBtn=b; });
 });
-mobileConfirm.addEventListener('click', ()=>{
-  if(!selectedAspectBtn){ alert('Pick an aspect ratio.'); return; }
+
+mobileConfirm && mobileConfirm.addEventListener('click', ()=>{
+  if(!selectedAspectBtn){ alert('Pick an aspect ratio'); return; }
   const v = selectedAspectBtn.getAttribute('data-aspect');
-  chosenAspect = eval(v); // safe-ish for controlled list
-  chosenAspectText = v.replace('/',' : ').replace(' ','');
+  chosenAspect = eval(v);
+  chosenAspectText = v.replace('/',' : ');
   appMode = 'mobile';
   setModeLabel();
   closeModal();
   log('Mode: Mobile — aspect ' + v);
+  adjustLayoutForAspect();
 });
-mobileCancel.addEventListener('click', ()=>{ aspectChooser.style.display='none'; });
 
 changeModeBtn.addEventListener('click', ()=>{ openModal(); });
 
-/* default open modal on first load */
 openModal();
 
-/* ========= Editor & line numbers ========= */
+/* ----------------- Editor functions ----------------- */
 function updateLineNumbers(){
   const text = codeEl.innerText.replace(/\t/g,'    ');
   const lines = text.split('\n');
@@ -313,20 +325,19 @@ function updateLineNumbers(){
   lineCountEl.textContent = lines.length;
   charCountEl.textContent = text.length;
 }
-codeEl.addEventListener('input', ()=>{
-  // minimal highlight and counts
+codeEl.addEventListener('input', ()=>{ applyMinimalHighlight(); updateLineNumbers(); });
+
+function applyMinimalHighlight(){
   const txt = codeEl.innerText;
   let html = txt
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/(\/\/.*?$)/gm, '<span style="color:#8f99a6;font-style:italic">$1</span>')
     .replace(/(\b\d+(\.\d+)?\b)/g, '<span style="color:#a5ffc9">$1</span>')
-    .replace(/\b(void|float|vec2|vec3|vec4|uniform|precision|if|else|for|while|return|main|varying|attribute|in|out|sampler2D)\b/g, '<span style="color:#7ec7ff">$1</span>')
+    .replace(/\b(void|float|vec2|vec3|vec4|uniform|precision|if|else|for|while|return|main|varying|attribute|in|out|sampler2D|gl_FragColor)\b/g, '<span style="color:#7ec7ff">$1</span>')
     .replace(/(\b[a-zA-Z_]\w*(?=\())/g, '<span style="color:#ffd88e">$1</span>');
   codeEl.innerHTML = html;
   placeCaretAtEnd(codeEl);
-  updateLineNumbers();
-});
-
+}
 function placeCaretAtEnd(el){
   el.focus();
   if(typeof window.getSelection != "undefined" && typeof document.createRange != "undefined"){
@@ -339,21 +350,20 @@ function placeCaretAtEnd(el){
   }
 }
 
-/* seed example */
-codeEl.innerText = `// Example shader
+/* seed editor */
+codeEl.innerText = `// Paste or type fragment shader (GLSL / Haxe)
+// Example:
 precision mediump float;
 uniform float uTime;
 uniform vec2 uResolution;
 void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-  float d = length(uv);
   vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2,4));
-  col *= 1.0/(1.0 + d*3.0);
   gl_FragColor = vec4(col,1.0);
 }`;
 updateLineNumbers();
 
-/* ========= File upload ========= */
+/* ----------------- File upload ----------------- */
 document.querySelector('.fileWrap input[type=file]').addEventListener('change', async (ev)=>{
   const f = ev.target.files[0];
   if(!f) return;
@@ -362,66 +372,62 @@ document.querySelector('.fileWrap input[type=file]').addEventListener('change', 
   codeEl.innerText = text;
   updateLineNumbers();
   log('Loaded file: ' + f.name);
-  setProgress(10);
+  setProgress(8);
 });
 
-/* ========= Fixer — GODMODE (heuristics) ========= */
-function setStatus(text){ document.getElementById('modeLabel').title = text; }
-
+/* ----------------- GODMODE fixer (heuristics) ----------------- */
 function godlikeFix(code){
-  setStatus('Fixing...');
-  setProgress(10);
-  log('Starting GODMODE pass');
-
+  setProgress(5);
+  log('Starting GODMODE fix pass');
   let out = code.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
 
-  // insert precision if missing
+  // 1. precision
   if(!/precision\s+(lowp|mediump|highp)\s+float\s*;/.test(out)){
     out = 'precision mediump float;\n' + out;
     log('Inserted precision mediump float;');
   }
-  setProgress(26);
+  setProgress(22);
 
-  // add psych uniforms if missing
-  const uniforms = [
-    {rx:/\buniform\s+float\s+uTime\b,decl:'uniform float uTime;'},
-    {rx:/\buniform\s+vec2\s+uResolution\b,decl:'uniform vec2 uResolution;'},
-    {rx:/\buniform\s+sampler2D\s+uSampler\b,decl:'uniform sampler2D uSampler;'}
+  // 2. Psych uniforms
+  const psychUniforms = [
+    {rx:/\buniform\s+float\s+uTime\b, decl:'uniform float uTime;'},
+    {rx:/\buniform\s+vec2\s+uResolution\b, decl:'uniform vec2 uResolution;'},
+    {rx:/\buniform\s+sampler2D\s+uSampler\b, decl:'uniform sampler2D uSampler;'}
   ];
   let added=0;
-  uniforms.forEach(u=>{
+  psychUniforms.forEach(u=>{
     if(!u.rx.test(out)){ out = u.decl + '\n' + out; added++; }
   });
   if(added) log('Added ' + added + ' Psych Engine uniform(s)');
-  setProgress(38);
+  setProgress(36);
 
-  // texture2D -> texture
+  // 3. texture2D -> texture
   if(/texture2D\(/.test(out)){ out = out.replace(/texture2D\(/g,'texture('); log('Converted texture2D() -> texture()'); }
   setProgress(48);
 
-  // smart semicolon insertion
+  // 4. Smart semicolons
   out = out.split('\n').map((ln)=>{
-    const t = ln.trim();
+    const t=ln.trim();
     if(!t) return ln;
     if(t.startsWith('//')||t.startsWith('/*')||t.startsWith('*')||t.startsWith('#')) return ln;
     if(/\)\s*{/.test(t) || /\{$/.test(t) || /\}$/.test(t)) return ln;
     if(/[;,\)\{\}]$/.test(t)) return ln;
-    if(/^(uniform|attribute|varying|in|out|const)\b/.test(t) && !t.endsWith(';')) return ln + ';';
-    if(/=/.test(t) && !/==/.test(t) && !t.endsWith(';')) return ln + ';';
+    if(/^(uniform|attribute|varying|in|out|const)\b/.test(t) && !t.endsWith(';')) return ln+';';
+    if(/=/.test(t) && !/==/.test(t) && !t.endsWith(';')) return ln+';';
     return ln;
   }).join('\n');
   log('Smart semicolons pass complete');
-  setProgress(62);
+  setProgress(60);
 
-  // division guards for simple patterns (x / y) => x / max(y,1e-6)
-  out = out.replace(/\/\s*\(?([a-zA-Z_]\w*(?:\s*\)|\b)?)/g, (m,g1)=>{
-    if(/^\d/.test(g1)) return '/' + g1;
-    return '/ max(' + g1.replace(/\)/g,'') + ', 0.000001)';
+  // 5. Division guards
+  out = out.replace(/\/\s*\(?([a-zA-Z_]\w*(?:\.[xyzw]{1,4})?)(\)?)/g, (m,g1,g2)=>{
+    if(/^\d/.test(g1)) return '/' + g1 + g2;
+    return '/ max(' + g1 + ', 0.000001)' + g2;
   });
-  log('Inserted division guards where appropriate');
-  setProgress(74);
+  log('Inserted division guards');
+  setProgress(72);
 
-  // close braces and parentheses if unbalanced
+  // 6. close braces/parentheses
   const opens = (out.match(/\{/g)||[]).length;
   const closes = (out.match(/\}/g)||[]).length;
   if(opens>closes){ out += '\n' + '}'.repeat(opens-closes); log('Auto-closed ' + (opens-closes) + ' brace(s)'); }
@@ -430,41 +436,36 @@ function godlikeFix(code){
   if(opar>cpar){ out += ')'.repeat(opar-cpar); log('Auto-closed ' + (opar-cpar) + ' parenthesis'); }
   setProgress(86);
 
-  // patch 'undefined' tokens
+  // 7. patch undefined
   out = out.replace(/\bundefined\b/g,'0.0');
   log('Patched undefined -> 0.0');
   setProgress(94);
 
-  // ensure a main exists
-  if(!/\bvoid\s+main\s*\(/.test(out)){ out += '\nvoid main(){ gl_FragColor = vec4(0.0); }'; log('Appended safe main() to avoid compile error'); }
+  // 8. ensure main
+  if(!/\bvoid\s+main\s*\(/.test(out)){ out += '\nvoid main(){ gl_FragColor = vec4(0.0,0.0,0.0,1.0); }'; log('Appended safe main()'); }
   setProgress(100);
   setTimeout(()=>setProgress(0),700);
-  setStatus('Fixed ✓');
-  log('GODMODE pass finished');
+  log('GODMODE pass complete');
   fixedShaderText = out;
   return out;
 }
 
-/* ========= WebGL preview (defensive) ========= */
+/* ----------------- WebGL preview (defensive) ----------------- */
 const gl = glcanvas.getContext('webgl') || glcanvas.getContext('experimental-webgl');
-if(!gl){ log('WebGL not available — live preview disabled', 'err'); previewBtn.disabled = true; }
+if(!gl){ log('WebGL not available — preview disabled', 'err'); previewBtn.disabled = true; }
 
 function resizePreviewCanvas(){
-  // If mobile mode chosen, set canvas to mimic aspect ratio with reasonable pixel size
   const container = glcanvas.parentElement;
   if(appMode === 'mobile'){
-    // desired pixel height depends on chosenAspect and container width
     const maxW = Math.min(560, container.clientWidth - 20);
     let targetW = maxW;
     let targetH = Math.round(targetW / chosenAspect);
-    // cap height for UX
     if(targetH > 900){ targetH = 900; targetW = Math.round(targetH * chosenAspect); }
     glcanvas.style.width = targetW + 'px';
     glcanvas.style.height = targetH + 'px';
     glcanvas.width = Math.floor(targetW * devicePixelRatio);
     glcanvas.height = Math.floor(targetH * devicePixelRatio);
   } else {
-    // PC: wide default (fit container)
     const contW = Math.min(640, container.clientWidth - 20);
     const contH = Math.round(contW / chosenAspect);
     glcanvas.style.width = contW + 'px';
@@ -478,13 +479,10 @@ let program = null;
 let animReq = null;
 let startTime = performance.now();
 
-function compileAndRun(src){
+function compileAndRun(fragmentSrc){
   if(!gl) return;
   resizePreviewCanvas();
-  const vs = `
-    attribute vec2 aPos;
-    void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
-  // compile helper
+  const vs = `attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
   function makeShader(type, src){
     const sh = gl.createShader(type);
     gl.shaderSource(sh, src);
@@ -497,7 +495,7 @@ function compileAndRun(src){
     return sh;
   }
   try{
-    const fs = makeShader(gl.FRAGMENT_SHADER, src);
+    const fs = makeShader(gl.FRAGMENT_SHADER, fragmentSrc);
     const vsS = makeShader(gl.VERTEX_SHADER, vs);
     if(program){ gl.deleteProgram(program); program = null; }
     const p = gl.createProgram();
@@ -520,7 +518,7 @@ function compileAndRun(src){
       const timeLoc = gl.getUniformLocation(program, 'uTime');
       const resLoc = gl.getUniformLocation(program, 'uResolution');
       const samplerLoc = gl.getUniformLocation(program, 'uSampler');
-      const t = (performance.now() - startTime)/1000;
+      const t = (performance.now()-startTime)/1000;
       if(timeLoc) gl.uniform1f(timeLoc, t);
       if(resLoc) gl.uniform2f(resLoc, glcanvas.width / devicePixelRatio, glcanvas.height / devicePixelRatio);
       if(samplerLoc){
@@ -543,32 +541,29 @@ function compileAndRun(src){
     log('Shader compiled & running preview');
   }catch(e){
     log('Compile/Link failed: ' + e.message, 'err');
-    setStatus('Compile Error');
   }
 }
 
-/* ========= Buttons ========= */
-document.getElementById('fixBtn').addEventListener('click', ()=>{
+/* ----------------- Buttons actions ----------------- */
+fixBtn.addEventListener('click', ()=>{
   const src = codeEl.innerText;
   try{
     const fixed = godlikeFix(src);
     codeEl.innerText = fixed;
-    updateLineNumbersSilent();
+    updateLineNumbers();
     downloadBtn.style.display = 'inline-block';
     downloadBtn.onclick = downloadFixed;
     animateConfetti();
   }catch(e){ log('Fixer crashed: ' + e.message, 'err'); }
 });
 
-document.getElementById('previewBtn').addEventListener('click', ()=>{
+previewBtn.addEventListener('click', ()=>{
   const src = codeEl.innerText;
-  try{
-    compileAndRun(src);
-  }catch(e){ log('Preview error: ' + e.message, 'err'); }
+  try{ compileAndRun(src); }catch(e){ log('Preview error: ' + e.message, 'err'); }
 });
 
 randomBtn.addEventListener('click', ()=>{
-  const sample = `// Demo: colorful cosine animation (mobile-friendly)
+  const sample = `// Demo shader
 precision mediump float;
 uniform float uTime;
 uniform vec2 uResolution;
@@ -580,58 +575,57 @@ void main(){
   gl_FragColor = vec4(col,1.0);
 }`;
   codeEl.innerText = sample;
-  updateLineNumbersSilent();
+  updateLineNumbers();
   log('Injected example shader');
 });
 
-/* download fixed */
+/* download */
 function downloadFixed(){
   const txt = codeEl.innerText;
   const blob = new Blob([txt], {type:'text/plain'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = currentFilename.endsWith('.frag')||currentFilename.endsWith('.glsl') ? ('fixed-' + currentFilename) : ('fixed_shader.frag');
+  a.download = currentFilename && (currentFilename.endsWith('.frag')||currentFilename.endsWith('.glsl')||currentFilename.endsWith('.hx')) ? ('fixed-' + currentFilename) : 'fixed_shader.frag';
   a.click();
   URL.revokeObjectURL(url);
   log('Downloaded fixed shader');
 }
 
-/* update line numbers without re-highlighting caret issues */
-function updateLineNumbersSilent(){
-  const text = codeEl.innerText.replace(/\t/g,'    ');
-  const lines = text.split('\n');
-  let html = '';
-  for(let i=1;i<=lines.length;i++) html += i + '\n';
-  lineNumbers.textContent = html;
-  lineCountEl.textContent = lines.length;
-  charCountEl.textContent = text.length;
-}
+/* ----------------- Line numbers helper ----------------- */
+function updateLineNumbers(){ const text = codeEl.innerText.replace(/\t/g,'    '); const lines = text.split('\n'); let html = ''; for(let i=1;i<=lines.length;i++) html += i + '\n'; lineNumbers.textContent = html; lineCountEl.textContent = lines.length; charCountEl.textContent = text.length; }
 
-/* ========= Confetti ========= */
+/* ----------------- Confetti ----------------- */
 confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight;
 const cctx = confettiCanvas.getContext('2d'); let confettiParticles = [];
 function spawnConfetti(){ const count = 48; for(let i=0;i<count;i++){ confettiParticles.push({ x: Math.random()*confettiCanvas.width, y: -20 - Math.random()*200, vx: (Math.random()-0.5)*6, vy: 1 + Math.random()*4, size: 6 + Math.random()*12, rot: Math.random()*360, spin: (Math.random()-0.5)*10, color: ['#ff6b6b','#6ef0a2','#6b3dff','#4ee0ff','#ffd88e'][Math.floor(Math.random()*5)], life: 120 + Math.random()*180 }); } }
-function animateConfetti(){ spawnConfetti(); function step(){ cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height); for(let i=confettiParticles.length-1;i>=0;i--){ const p = confettiParticles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.rot += p.spin; p.life--; cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.rot * Math.PI/180); cctx.fillStyle = p.color; cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6); cctx.restore(); if(p.y > confettiCanvas.height + 50 || p.life <= 0) confettiParticles.splice(i,1); } if(confettiParticles.length>0) requestAnimationFrame(step); else cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); } requestAnimationFrame(step); }
+function animateConfetti(){ spawnConfetti(); function step(){ cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); for(let i=confettiParticles.length-1;i>=0;i--){ const p = confettiParticles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.rot += p.spin; p.life--; cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.rot * Math.PI/180); cctx.fillStyle = p.color; cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6); cctx.restore(); if(p.y > confettiCanvas.height + 50 || p.life <= 0) confettiParticles.splice(i,1); } if(confettiParticles.length>0) requestAnimationFrame(step); else cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); } requestAnimationFrame(step); }
 
-/* ========= logs control ========= */
-document.getElementById('copyLog').addEventListener('click', ()=>{ navigator.clipboard.writeText(logEl.textContent).then(()=>log('Log copied to clipboard')); });
-document.getElementById('clearLog').addEventListener('click', ()=>{ logEl.textContent = ''; });
+/* ----------------- Aspect & layout adjustments ----------------- */
+function adjustLayoutForAspect(){
+  setModeLabel();
+  aspectLabel.textContent = chosenAspectText;
+  // scale the whole UI a bit for mobile to feel native
+  if(appMode === 'mobile'){ document.documentElement.style.setProperty('--ui-scale', '0.96'); }
+  else document.documentElement.style.setProperty('--ui-scale', '1');
+  resizePreviewCanvas();
+}
 
-/* ========= aspect fit toggle ========= */
 toggleFit.addEventListener('click', ()=>{ fitToContainer = !fitToContainer; toggleFit.textContent = fitToContainer ? 'Fit' : 'Pixel'; resizePreviewCanvas(); });
 
-/* ========= window resize ========= */
 window.addEventListener('resize', ()=>{ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; resizePreviewCanvas(); });
+
+/* copy / clear logs */
+document.getElementById('copyLog').addEventListener('click', ()=>{ navigator.clipboard.writeText(logEl.textContent).then(()=>log('Log copied to clipboard')); });
+document.getElementById('clearLog').addEventListener('click', ()=>{ logEl.textContent = ''; });
 
 /* keyboard save */
 window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); downloadFixed(); } });
 
-/* initial UI state */
+/* initial */
 setModeLabel();
 resizePreviewCanvas();
-log('GODLIKE Shader Fixer ready — select mode to start.');
-
+log('GODLIKE Shader Fixer ready — choose mode to start.');
 </script>
 </body>
 </html>
