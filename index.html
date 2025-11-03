@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Shader Fixer</title>
+<style>
+  body { font-family: monospace; background:#1e1e1e; color:#f0f0f0; padding:20px; }
+  h1 { text-align:center; color:#00ffff; }
+  input, button, textarea { width: 100%; margin-top:10px; padding:10px; font-family: monospace; }
+  textarea { height:300px; background:#2e2e2e; color:#f0f0f0; border:1px solid #555; }
+  .error { color:#ff5555; }
+  .fixed { color:#55ff55; }
+</style>
+</head>
+<body>
+
+<h1>Universal Shader Fixer</h1>
+
+<input type="file" id="shaderFile" accept=".frag,.hx,.glsl,.txt">
+<textarea id="shaderContent" placeholder="Shader code will appear here..."></textarea>
+<button id="fixBtn">Fix Shader</button>
+<pre id="output"></pre>
+<button id="downloadBtn" style="display:none;">Download Fixed Shader</button>
+
+<script>
+// Read file
+document.getElementById('shaderFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        document.getElementById('shaderContent').value = reader.result;
+    };
+    reader.readAsText(file);
+});
+
+// Fix shader
+document.getElementById('fixBtn').addEventListener('click', () => {
+    const code = document.getElementById('shaderContent').value;
+    const output = document.getElementById('output');
+    output.textContent = '';
+    
+    if(!code.trim()) { output.textContent = 'No shader code detected!'; return; }
+
+    let fixed = code;
+
+    // Common GLSL/Haxe fixes
+    // 1. Add missing semicolons at end of lines
+    fixed = fixed.split('\n').map(line => {
+        const trimmed = line.trim();
+        if(trimmed && !trimmed.startsWith('//') && !trimmed.endsWith(';') && !trimmed.endsWith('{') && !trimmed.endsWith('}') && !trimmed.includes('else') && !trimmed.includes('#')) {
+            return line + ';';
+        }
+        return line;
+    }).join('\n');
+
+    // 2. Remove extra whitespaces
+    fixed = fixed.replace(/\t/g,'    ').replace(/[ ]+$/gm,'');
+
+    // 3. Check for unclosed braces
+    let openBraces = (fixed.match(/{/g) || []).length;
+    let closeBraces = (fixed.match(/}/g) || []).length;
+    if(openBraces > closeBraces) {
+        fixed += '\n'.repeat(openBraces - closeBraces) + '}'.repeat(openBraces - closeBraces);
+        output.innerHTML += `<span class="fixed">Added ${openBraces - closeBraces} missing closing braces.</span>\n`;
+    }
+
+    // Show fixed code
+    document.getElementById('shaderContent').value = fixed;
+    output.innerHTML += `<span class="fixed">Shader fixed and formatted!</span>`;
+
+    // Enable download
+    const blob = new Blob([fixed], {type: "text/plain"});
+    const url = URL.createObjectURL(blob);
+    const btn = document.getElementById('downloadBtn');
+    btn.style.display = 'block';
+    btn.onclick = () => { 
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fixed_shader' + (shaderFile.files[0] ? '.' + shaderFile.files[0].name.split('.').pop() : '.frag');
+        a.click();
+    };
+});
+</script>
+
+</body>
+</html>
