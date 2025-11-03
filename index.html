@@ -3,85 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Universal Shader Fixer</title>
+<title>Psych Shader Fixer</title>
 <style>
-  body { font-family: monospace; background:#1e1e1e; color:#f0f0f0; padding:20px; }
-  h1 { text-align:center; color:#00ffff; }
-  input, button, textarea { width: 100%; margin-top:10px; padding:10px; font-family: monospace; }
-  textarea { height:300px; background:#2e2e2e; color:#f0f0f0; border:1px solid #555; }
-  .error { color:#ff5555; }
-  .fixed { color:#55ff55; }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  html, body { margin:0; padding:0; height:100%; font-family:'Space Mono', monospace; background:#0f0f17; color:#fff; overflow:hidden; }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+  h1 { font-size:2em; margin-top:20px; color:#00ffff; text-shadow: 0 0 10px #00ffff; animation: glow 2s infinite alternate; }
+  @keyframes glow { 0% {text-shadow:0 0 5px #00ffff;} 100% {text-shadow:0 0 20px #00ffff;} }
+
+  .container { display:flex; flex-direction:column; align-items:center; width:95%; max-width:900px; margin-top:20px; }
+  input[type="file"] { display:none; }
+  label { cursor:pointer; background:linear-gradient(90deg,#ff6ec4,#7873f5); padding:15px; border-radius:12px; font-weight:bold; transition:0.3s; text-align:center; width:100%; margin-bottom:10px; }
+  label:hover { background:linear-gradient(90deg,#7873f5,#ff6ec4); transform:scale(1.05); }
+  
+  #editor { width:100%; height:300px; border-radius:12px; border:none; margin-bottom:15px; font-family:monospace; font-size:14px; padding:10px; background:#1a1a2e; color:#fff; resize:none; overflow:auto; transition:0.3s; }
+  #editor:focus { outline:none; box-shadow:0 0 15px #00ffff; }
+
+  button { padding:15px; border:none; border-radius:12px; margin-bottom:10px; width:100%; font-weight:bold; font-size:16px; cursor:pointer; background:linear-gradient(90deg,#00ffff,#ff00ff); color:#fff; transition:0.3s; text-shadow:0 0 5px #fff; }
+  button:hover { transform:scale(1.05); background:linear-gradient(90deg,#ff00ff,#00ffff); }
+
+  #output { width:100%; min-height:100px; background:#11111f; border-radius:12px; padding:10px; overflow:auto; margin-bottom:10px; white-space:pre-wrap; }
+  #canvasContainer { width:100%; height:300px; border-radius:12px; overflow:hidden; margin-bottom:10px; position:relative; }
+  canvas { width:100%; height:100%; display:block; }
+
+  .glow { animation: glow 1.5s infinite alternate; }
 </style>
 </head>
 <body>
 
-<h1>Universal Shader Fixer</h1>
+<h1 class="glow">Psych Shader Fixer</h1>
+<div class="container">
+  <label for="shaderFile">Upload Shader (.frag or .hx)</label>
+  <input type="file" id="shaderFile" accept=".frag,.hx,.glsl,.txt">
 
-<input type="file" id="shaderFile" accept=".frag,.hx,.glsl,.txt">
-<textarea id="shaderContent" placeholder="Shader code will appear here..."></textarea>
-<button id="fixBtn">Fix Shader</button>
-<pre id="output"></pre>
-<button id="downloadBtn" style="display:none;">Download Fixed Shader</button>
+  <textarea id="editor" placeholder="Shader code will appear here..."></textarea>
+  <button id="fixBtn">AUTO-FIX SHADER</button>
+  <button id="downloadBtn" style="display:none;">Download Fixed Shader</button>
+
+  <div id="output"></div>
+
+  <div id="canvasContainer">
+    <canvas id="preview"></canvas>
+  </div>
+</div>
 
 <script>
-// Read file
-document.getElementById('shaderFile').addEventListener('change', e => {
+// Shader Upload
+const shaderFileInput = document.getElementById('shaderFile');
+const editor = document.getElementById('editor');
+shaderFileInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-        document.getElementById('shaderContent').value = reader.result;
-    };
+    reader.onload = () => { editor.value = reader.result; };
     reader.readAsText(file);
 });
 
-// Fix shader
-document.getElementById('fixBtn').addEventListener('click', () => {
-    const code = document.getElementById('shaderContent').value;
-    const output = document.getElementById('output');
-    output.textContent = '';
-    
-    if(!code.trim()) { output.textContent = 'No shader code detected!'; return; }
-
+// GODLIKE FIXER
+function fixShader(code){
     let fixed = code;
 
-    // Common GLSL/Haxe fixes
-    // 1. Add missing semicolons at end of lines
-    fixed = fixed.split('\n').map(line => {
-        const trimmed = line.trim();
-        if(trimmed && !trimmed.startsWith('//') && !trimmed.endsWith(';') && !trimmed.endsWith('{') && !trimmed.endsWith('}') && !trimmed.includes('else') && !trimmed.includes('#')) {
-            return line + ';';
-        }
+    // 1. Add missing semicolons (if not comment/brace/preprocessor)
+    fixed = fixed.split('\n').map(line=>{
+        const t=line.trim();
+        if(t && !t.startsWith('//') && !t.endsWith(';') && !t.endsWith('{') && !t.endsWith('}') && !t.includes('#') && !t.includes('else')) return line+';';
         return line;
     }).join('\n');
 
-    // 2. Remove extra whitespaces
+    // 2. Whitespace & tabs
     fixed = fixed.replace(/\t/g,'    ').replace(/[ ]+$/gm,'');
 
-    // 3. Check for unclosed braces
-    let openBraces = (fixed.match(/{/g) || []).length;
-    let closeBraces = (fixed.match(/}/g) || []).length;
-    if(openBraces > closeBraces) {
-        fixed += '\n'.repeat(openBraces - closeBraces) + '}'.repeat(openBraces - closeBraces);
-        output.innerHTML += `<span class="fixed">Added ${openBraces - closeBraces} missing closing braces.</span>\n`;
-    }
+    // 3. Unbalanced braces
+    let open=(fixed.match(/{/g)||[]).length;
+    let close=(fixed.match(/}/g)||[]).length;
+    if(open>close) fixed += '}'.repeat(open-close);
 
-    // Show fixed code
-    document.getElementById('shaderContent').value = fixed;
-    output.innerHTML += `<span class="fixed">Shader fixed and formatted!</span>`;
+    // 4. Add missing Psych Engine uniforms
+    const uniforms = ['uTime','uResolution','uSampler'];
+    uniforms.forEach(u=>{
+        if(!fixed.includes(u)) fixed = `uniform float ${u};\n` + fixed;
+    });
 
+    // 5. Safety patches for vec/float assignments
+    fixed = fixed.replace(/(float|vec[234])\s+(\w+)\s*=\s*undefined\s*;/g,'$1 $2=0.0;');
+
+    return fixed;
+}
+
+// AUTO-FIX BUTTON
+const output = document.getElementById('output');
+const downloadBtn = document.getElementById('downloadBtn');
+document.getElementById('fixBtn').addEventListener('click', ()=>{
+    let code = editor.value;
+    if(!code.trim()){ output.textContent='No shader code detected!'; return; }
+
+    const fixed = fixShader(code);
+    editor.value = fixed;
+    output.textContent = 'Shader auto-fixed and ready for Psych Engine!';
+    
     // Enable download
-    const blob = new Blob([fixed], {type: "text/plain"});
+    const blob = new Blob([fixed], {type:'text/plain'});
     const url = URL.createObjectURL(blob);
-    const btn = document.getElementById('downloadBtn');
-    btn.style.display = 'block';
-    btn.onclick = () => { 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'fixed_shader' + (shaderFile.files[0] ? '.' + shaderFile.files[0].name.split('.').pop() : '.frag');
+    downloadBtn.style.display='block';
+    downloadBtn.onclick = ()=> {
+        const a=document.createElement('a');
+        a.href=url;
+        a.download='fixed_shader'+(shaderFileInput.files[0]?'.'+shaderFileInput.files[0].name.split('.').pop():'.frag');
         a.click();
     };
+
+    // Update preview
+    updatePreview(fixed);
 });
+
+// GODLIKE SHADER PREVIEW
+const canvas = document.getElementById('preview');
+const gl = canvas.getContext('webgl');
+let shaderProgram=null;
+function updatePreview(code){
+    if(!gl) return;
+    gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
+    const vsSource=`attribute vec4 aVertexPosition;void main(){gl_Position=aVertexPosition;}`;
+    let fsSource = code;
+    
+    // Compile shaders
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs,vsSource); gl.compileShader(vs);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs,fsSource); gl.compileShader(fs);
+
+    if(!gl.getShaderParameter(fs, gl.COMPILE_STATUS)){
+        output.textContent += '\nPreview compile error: '+gl.getShaderInfoLog(fs);
+        return;
+    }
+
+    if(shaderProgram) gl.deleteProgram(shaderProgram);
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vs); gl.attachShader(shaderProgram, fs);
+    gl.linkProgram(shaderProgram);
+    gl.useProgram(shaderProgram);
+
+    // Simple full-screen quad
+    const vertices = new Float32Array([-1,-1,1,-1,-1,1,1,1]);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);
+    const posLoc = gl.getAttribLocation(shaderProgram,'aVertexPosition');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc,2,gl.FLOAT,false,0,0);
+
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
 </script>
 
 </body>
