@@ -1,227 +1,275 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GODLIKE Shader Fixer+ — Cyber-Neon</title>
-
-<!-- Ace Editor CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.2/ace.js" integrity="sha512-6p8nqgk8mQyqG1m0qfQ7Yg1Q41mY5N6lq2g4tR6g0P4Cs1xN38nYjz2Q0XH5g2o6x6y4n7xQ6r9b3x0u6y9vgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+<title>GODLIKE Shader Fixer — Ultra Animated Single File</title>
+<meta name="color-scheme" content="dark">
 <style>
-  :root{
-    --bg:#060818;
-    --panel:#081028;
-    --glass: rgba(255,255,255,0.03);
-    --accent1:#6b3dff;
-    --accent2:#00e0ff;
-    --neon:#8dfcff;
-    --muted:#9fb9ff66;
-    --danger:#ff7a7a;
-    --success:#6ef0a2;
+  /* ========== Fonts & base ========== */
+  @font-face {
+    font-family: "Xenomono";
+    src: local("Courier New"), local("monospace");
   }
-  html,body{height:100%;margin:0;padding:0;background:radial-gradient(1200px 600px at 10% 10%, rgba(107,61,255,0.06), transparent), radial-gradient(800px 400px at 90% 90%, rgba(0,224,255,0.04), transparent), var(--bg); color:#e8f5ff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; overflow:hidden;}
-  /* floating neon blobs */
-  .bgBlobs { position:fixed; inset:0; z-index:0; pointer-events:none; }
-  .blob { position:absolute; filter:blur(60px); opacity:0.6; transform:translate3d(0,0,0); animation: drift linear infinite; }
-  .blob.a{ width:520px; height:520px; left:-10%; top:0; background:linear-gradient(120deg,var(--accent1),#ff66b3); animation-duration:26s; }
-  .blob.b{ width:360px; height:360px; right:-10%; bottom:-5%; background:linear-gradient(120deg,var(--accent2),#6b3dff); animation-duration:32s; opacity:.45; }
-  @keyframes drift { 0% { transform:translateY(0) rotate(0deg) } 50% { transform:translateY(-30px) rotate(180deg) } 100% { transform:translateY(0) rotate(360deg) } }
+  :root{
+    --bg1:#071025; --bg2:#0f1930; --accent1:#4ee0ff; --accent2:#b36bff;
+    --glass: rgba(255,255,255,0.04);
+    --success:#6ef0a2; --danger:#ff6b6b;
+  }
+  html,body{height:100%;margin:0;padding:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));font-family:Xenomono,monospace;color:#e9eefc;overflow:hidden;}
+  /* ========== animated background blobs ========== */
+  .bg {
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+    background:
+      radial-gradient(800px 400px at 10% 20%, rgba(123,64,255,0.12), transparent 10%),
+      radial-gradient(600px 300px at 80% 80%, rgba(78,224,255,0.08), transparent 10%);
+    mix-blend-mode:screen;
+    transition:opacity .6s ease;
+  }
+  .blob {
+    position:absolute;border-radius:50%; filter:blur(60px); opacity:.55; transform:translate3d(0,0,0);
+    animation: floaty linear infinite;
+    will-change: transform;
+  }
+  .blob.a{width:520px;height:520px; left:-10%; top:5%; background:linear-gradient(45deg,#6b3dff,#00f0ff); animation-duration:24s;}
+  .blob.b{width:360px;height:360px; right:-10%; bottom:0; background:linear-gradient(45deg,#ff66b3,#6b3dff); animation-duration:28s; opacity:.35;}
+  @keyframes floaty{0%{transform:translateY(0) rotate(0deg) scale(1)}50%{transform:translateY(-40px) rotate(180deg) scale(1.05)}100%{transform:translateY(0) rotate(360deg) scale(1)}}
 
-  /* layout */
-  .app { position:relative; z-index:2; max-width:1200px; margin:18px auto; padding:18px; box-sizing:border-box; display:flex; gap:12px; height:calc(100vh - 36px); }
-  .left { flex:1; display:flex; flex-direction:column; gap:12px; min-width:220px; }
-  .right { width:420px; display:flex; flex-direction:column; gap:12px; }
+  /* ========== layout container ========== */
+  .wrap { position:relative; z-index:2; width:100%; max-width:1100px; margin:20px auto; padding:18px; box-sizing:border-box; }
+  .panel {
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.04); backdrop-filter: blur(6px);
+  }
+  header { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  .title {
+    display:flex; flex-direction:column; gap:4px; flex:1;
+  }
+  h1 { margin:0; font-size:20px; color:var(--accent1); letter-spacing:0.6px; text-shadow:0 4px 20px rgba(78,224,255,0.08); }
+  p.lead { margin:0; color:#bcd3ff66; font-size:12px; }
 
-  .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
-
-  header.top { display:flex; gap:12px; align-items:center; }
-  .logo { width:72px; height:72px; border-radius:12px; background: linear-gradient(135deg,var(--accent1),var(--accent2)); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 26px rgba(107,61,255,0.12); }
-  .logo svg{ filter:drop-shadow(0 8px 18px rgba(0,224,255,0.08)); }
-
-  .title { flex:1; }
-  h1 { margin:0; font-size:18px; color:var(--neon); text-shadow:0 6px 26px rgba(0,224,255,0.06); letter-spacing:0.4px; }
-  p.sub { margin:2px 0 0 0; font-size:12px; color:var(--muted); }
-
-  .controls { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
-  .btn { border:0; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:700; letter-spacing:0.5px; color:#041826; background:linear-gradient(90deg,var(--accent2),var(--accent1)); box-shadow:0 6px 20px rgba(107,61,255,0.08); transition:transform .12s ease, box-shadow .12s ease; }
-  .btn:hover{ transform:translateY(-3px); }
-  .btn.ghost { background:transparent; color:var(--neon); border:1px solid rgba(255,255,255,0.04); box-shadow:none; }
-  .fileWrap { position:relative; overflow:hidden; border-radius:10px; }
+  /* ========== controls row ========== */
+  .controls { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
+  .btn {
+    border:0; padding:12px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:0.6px;
+    background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#041826; box-shadow: 0 6px 20px rgba(179,107,255,0.12); transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .btn:active{ transform:translateY(1px) scale(.998); }
+  .btn.ghost { background:transparent; color:#cfe9ff; border:1px solid rgba(255,255,255,0.04); box-shadow:none; }
+  .fileWrap { position:relative; overflow:hidden; display:inline-block; }
   input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
 
-  .editorPanel { flex:1; display:flex; flex-direction:column; gap:10px; min-height:300px; }
-  #editorContainer { height:100%; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.03); }
-  #aceEditor { width:100%; height:520px; }
+  /* ========== two-column layout ========== */
+  .grid { display:grid; grid-template-columns: 1fr 420px; gap:12px; margin-top:10px; align-items:start; }
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} .rightCol{order:2} }
 
-  .miniRow { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:6px; }
-  .muted { color:var(--muted); font-size:13px; }
-
-  /* preview */
-  .preview { height:300px; border-radius:10px; overflow:hidden; position:relative; }
-  #glPreview { width:100%; height:100%; display:block; background:#000; }
-
-  .logBox { height:150px; overflow:auto; background:rgba(0,0,0,0.28); border-radius:8px; padding:10px; font-family:monospace; font-size:13px; color:#cfe9ff; white-space:pre-wrap; box-shadow: inset 0 4px 20px rgba(0,0,0,0.6); }
-  .logLine.ok{ color:var(--success); }
-  .logLine.err{ color:var(--danger); }
-
-  /* fix-with-logs */
-  .logsPanel { margin-top:10px; display:flex; gap:8px; }
-  .logsPanel textarea{ flex:1; height:120px; resize:vertical; border-radius:8px; padding:8px; background:#07122a; border:1px solid rgba(255,255,255,0.03); color:#e6f6ff; font-family:monospace; }
-
-  /* comment section */
-  .comments { max-height:260px; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:6px; }
-  .commentCard{ background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); padding:8px; border-radius:8px; display:flex; gap:8px; align-items:flex-start; }
-  .commentCard .meta{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .commentCard button{ border:0; background:transparent; color:var(--muted); cursor:pointer; font-weight:700; padding:6px; border-radius:6px; }
-
-  /* progress bar & typewriter effect */
-  .progressWrap { height:8px; background:rgba(255,255,255,0.03); border-radius:8px; overflow:hidden; }
-  .progressBar { height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent1)); transition:width .45s cubic-bezier(.2,.9,.2,1); box-shadow:0 6px 20px rgba(0,224,255,0.06); }
-
-  /* tiny ripples */
-  .ripple { position:relative; overflow:hidden; }
-  .ripple:active::after{ content:""; position:absolute; left:0; top:0; width:100%; height:100%; background:radial-gradient(circle, rgba(255,255,255,0.06) 0, rgba(255,255,255,0) 60%); opacity:1; animation:rippleAnim .6s ease-out forwards; }
-  @keyframes rippleAnim{ 0%{ transform:scale(.2); opacity:1 } 100%{ transform:scale(2); opacity:0 } }
-
-  /* small responsive behavior */
-  @media (max-width:980px){
-    .app{ flex-direction:column; height:unset; padding-bottom:80px; overflow:auto; }
-    .right{ width:100%; order:2; }
-    .left{ order:1; }
-    #aceEditor{ height:420px; }
+  /* ========== editor area (faux code editor) ========== */
+  .editorBox { min-height:400px; border-radius:12px; overflow:hidden; position:relative; }
+  .ln { position:absolute; left:0; top:0; bottom:0; width:54px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0)); color:#9fb9ff66; padding:10px; box-sizing:border-box; font-size:12px; line-height:18px; user-select:none; }
+  .codeArea {
+    margin-left:54px; height:100%; width:100%; box-sizing:border-box; background:#081029; color:#dff3ff; font-family:monospace; font-size:13px; padding:10px; outline:none;
+    caret-color:var(--accent1); resize:none; border:none; overflow:auto; line-height:18px; white-space:pre;
   }
+  .codeArea[contenteditable]{ -webkit-user-select:text; }
 
-  footer{ position:fixed; left:10px; bottom:10px; color:var(--muted); font-size:12px; z-index:5; }
+  /* simple syntax highlighting */
+  .tok-key{ color:#7ec7ff; } .tok-fn{ color:#ffd88e; } .tok-num{ color:#a5ffc9; } .tok-comment{ color:#8f99a6; font-style:italic; }
+  .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+
+  /* ========== preview area ========== */
+  .rightCol { display:flex; flex-direction:column; gap:8px; }
+  .previewCard { padding:10px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); min-height:260px; position:relative; overflow:hidden; }
+  #glcanvas { width:100%; height:260px; display:block; border-radius:8px; background:#000; }
+
+  /* ========== output logs ========== */
+  .log { height:140px; overflow:auto; background:rgba(0,0,0,0.25); padding:10px; border-radius:8px; font-size:12px; color:#cfe9ff; white-space:pre-wrap; }
+
+  /* ========== progress & confetti ========== */
+  .progressWrap{ height:8px; background:rgba(255,255,255,0.03); border-radius:8px; overflow:hidden; }
+  .progress { height:100%; width:0%; background: linear-gradient(90deg,var(--accent1),var(--accent2)); transition:width .4s cubic-bezier(.2,.9,.2,1); box-shadow:0 6px 20px rgba(78,224,255,0.08); }
+  /* confetti pieces */
+  .confetti { position:fixed; z-index:9999; pointer-events:none; }
+
+  /* ========== micro-animations for UI delight ========== */
+  .pulse { animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{ transform:scale(1) }50%{ transform:scale(1.02) }100%{ transform:scale(1) } }
+  .glitch {
+    display:inline-block;
+    position:relative;
+  }
+  .glitch::before, .glitch::after{
+    content:attr(data-text);
+    position:absolute; left:0; top:0; opacity:.6;
+    clip-path:polygon(0 0,100% 0,100% 45%,0 45%);
+  }
+  .glitch::before{ transform:translate(-2px, -1px); color:#ff99cc; mix-blend-mode:screen; }
+  .glitch::after{ transform:translate(2px, 1px); color:#66f0ff; mix-blend-mode:screen; opacity:.5; clip-path:polygon(0 55%,100% 55%,100% 100%,0 100%); }
+
+  /* small helper styles */
+  .muted{ color:#9fb9ff66; font-size:12px; }
+  .small{ font-size:12px; }
+  footer{ position:fixed; left:18px; bottom:18px; z-index:5; font-size:12px; color:#9fb9ff66; }
 </style>
 </head>
 <body>
-  <div class="bgBlobs" aria-hidden>
-    <div class="blob a"></div>
-    <div class="blob b"></div>
-  </div>
 
-  <div class="app" role="application" aria-label="GODLIKE Shader Fixer Cyber Neon">
-    <div class="left">
-      <div class="panel">
-        <header class="top">
-          <div class="logo" aria-hidden>
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 12c0-4.9706 4.0294-9 9-9s9 4.0294 9 9-4.0294 9-9 9S3 16.9706 3 12z" stroke="#041826" stroke-width="1.2" /><path d="M7 12l3 3 7-7" stroke="#041826" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="title">
-            <h1>GODLIKE Shader Fixer+ <span style="font-size:12px;color:var(--muted)">Cyber-Neon</span></h1>
-            <p class="sub">Fix GLSL & Psych (.hx) fragment shaders — Auto-fix from logs, live preview, comments.</p>
-          </div>
-          <div style="width:120px;text-align:right">
-            <div class="muted">Status</div>
-            <div id="status" style="font-weight:800;color:var(--accent2);">Ready</div>
-          </div>
-        </header>
+<div class="bg" aria-hidden="true">
+  <div class="blob a"></div><div class="blob b"></div>
+</div>
 
-        <div class="controls">
-          <div class="fileWrap ripple">
-            <button class="btn">Upload Shader</button>
-            <input id="fileInput" type="file" accept=".frag,.hx,.glsl,.txt">
-          </div>
-          <button id="autoFixBtn" class="btn ripple">AUTO-FIX (GODMODE)</button>
-          <button id="fixWithLogsBtn" class="btn ghost ripple">Fix it with Logs</button>
-          <button id="previewBtn" class="btn ghost ripple">Live Preview</button>
-          <button id="downloadBtn" class="btn ripple" style="display:none">Download Fixed</button>
-          <div style="flex:1"></div>
-          <button id="exampleBtn" class="btn ghost ripple">Inject Example</button>
-        </div>
-
-        <div class="editorPanel" aria-live="polite">
-          <div class="miniRow">
-            <div class="muted">Editor • Ace • Theme: Cyber — Lines: <span id="linesCount">0</span></div>
-            <div class="muted">Chars: <span id="charsCount">0</span></div>
-          </div>
-          <div id="editorContainer">
-            <div id="aceEditor" aria-label="Shader editor"></div>
-          </div>
-
-          <div class="miniRow">
-            <div style="width:70%;">
-              <div class="progressWrap">
-                <div class="progressBar" id="progressBar"></div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div class="muted" id="miniNote">No actions yet</div>
-            </div>
-          </div>
-
-          <div class="panel logsPanel" style="display:flex; flex-direction:column;">
-            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <div style="flex:1" class="muted">Fix-with-Logs: paste compile log / errors here and press "Apply Fixes".</div>
-              <button id="applyLogFix" class="btn ghost ripple">Apply Fixes</button>
-              <button id="clearLogsInput" class="btn ghost ripple">Clear</button>
-            </div>
-            <textarea id="logsInput" placeholder="Paste shader compile errors here (WebGL or Haxe compiler logs)"></textarea>
-          </div>
-        </div>
+<div class="wrap">
+  <div class="panel">
+    <header>
+      <div style="width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.4);">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M2 12l3-3 4 4 8-8 5 5" stroke="#041826" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-
-      <!-- comments panel -->
-      <div class="panel" style="margin-top:12px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
-          <div class="muted">Community Comments (local)</div>
-          <div class="muted small">offline • stored in browser</div>
-        </div>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input id="commentName" placeholder="name" style="flex:0 0 120px; border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.03); background:#07122a; color:#e9f6ff;">
-          <input id="commentText" placeholder="add a comment..." style="flex:1;border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.03); background:#07122a; color:#e9f6ff;">
-          <button id="postComment" class="btn ripple">Post</button>
-        </div>
-        <div class="comments" id="commentsList" aria-live="polite"></div>
+      <div class="title">
+        <h1>GODLIKE Shader Fixer <span class="muted small">— Ultra Animated</span></h1>
+        <p class="lead">Fix GLSL & Psych (.hx) fragment shaders, preview live, download patched shader.</p>
       </div>
+      <div style="width:120px;text-align:right;">
+        <div class="muted small">Status</div>
+        <div id="statusDot" style="margin-top:6px;font-weight:800;color:var(--accent1);">Ready</div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="fileWrap">
+        <button class="btn">Upload Shader</button>
+        <input id="fileIn" type="file" accept=".frag,.hx,.glsl,.txt">
+      </div>
+      <button id="fixBtn" class="btn">AUTO-FIX (GODMODE)</button>
+      <button id="previewBtn" class="btn ghost">Live Preview</button>
+      <button id="downloadBtn" class="btn" style="display:none">Download Fixed</button>
+      <div style="flex:1"></div>
+      <button id="randomBtn" class="btn ghost">Inject Example</button>
     </div>
 
-    <div class="right">
-      <div class="panel preview">
-        <canvas id="glPreview"></canvas>
-      </div>
+    <div class="grid">
+      <!-- LEFT: Editor -->
+      <div>
+        <div class="editorBox panel" style="padding:12px;">
+          <div class="toolbar" style="justify-content:space-between">
+            <div>
+              <span class="muted small">Shader Editor</span>
+              <span id="langBadge" class="muted small" style="margin-left:10px">GLSL / Haxe</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="muted small">Lines: <span id="lineCount">0</span></div>
+              <div style="width:10px"></div>
+              <div class="muted small">Chars: <span id="charCount">0</span></div>
+            </div>
+          </div>
 
-      <div class="panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div class="muted">Realtime Output / Fix Log</div>
-          <div style="display:flex; gap:8px;">
-            <button id="copyConsole" class="btn ghost ripple">Copy</button>
-            <button id="clearConsole" class="btn ghost ripple">Clear</button>
+          <div style="position:relative;">
+            <div class="ln" id="lineNumbers"></div>
+            <div id="code" class="codeArea" contenteditable="true" spellcheck="false" aria-label="Shader code editor" ></div>
           </div>
         </div>
-        <div class="logBox" id="consoleLog" aria-live="polite"></div>
+
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+          <div class="progressWrap" style="flex:1"><div class="progress" id="progress"></div></div>
+          <div style="width:120px;text-align:right"><span id="miniNote" class="muted small">No actions yet</span></div>
+        </div>
       </div>
 
-      <div class="panel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div class="muted">Changelog / Fixes Applied</div>
-          <div class="muted small">review before download</div>
+      <!-- RIGHT: Preview & logs -->
+      <div class="rightCol">
+        <div class="previewCard panel">
+          <canvas id="glcanvas"></canvas>
         </div>
-        <div class="logBox" id="changelog" style="height:160px;"></div>
+
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div class="muted small">Realtime Output / Fix Log</div>
+            <div style="display:flex;gap:8px">
+              <button id="copyLog" class="btn ghost small">Copy</button>
+              <button id="clearLog" class="btn ghost small">Clear</button>
+            </div>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <footer>Tip: After preview compile errors appear in the console — copy them into the Fix-with-Logs box and press Apply Fixes.</footer>
+<canvas id="confettiCanvas" class="confetti"></canvas>
+<footer>Open the file, paste or type shader, press AUTO-FIX, then Live Preview.</footer>
 
 <script>
-/* ------------------------
-   Editor (Ace) Setup
-   ------------------------ */
-const editor = ace.edit("aceEditor", {
-  mode: "ace/mode/glsl",
-  selectionStyle: "text",
-  theme: "ace/theme/dracula",
-  fontSize: 13,
-  showPrintMargin: false,
-  useWorker: false
+/* ===========================
+   Utility & UI Helpers
+   =========================== */
+const codeEl = document.getElementById('code');
+const lineNumbers = document.getElementById('lineNumbers');
+const lineCountEl = document.getElementById('lineCount');
+const charCountEl = document.getElementById('charCount');
+const logEl = document.getElementById('log');
+const progressEl = document.getElementById('progress');
+const statusDot = document.getElementById('statusDot');
+const fileIn = document.getElementById('fileIn');
+const downloadBtn = document.getElementById('downloadBtn');
+const glcanvas = document.getElementById('glcanvas');
+const confettiCanvas = document.getElementById('confettiCanvas');
+
+let fixedShaderText = '';
+let currentFilename = 'fixed_shader.frag';
+
+/* ---------- tiny safe logger ---------- */
+function log(msg, level='info'){
+  const time = new Date().toLocaleTimeString();
+  const prefix = level==='err' ? '[ERROR]' : level==='warn' ? '[WARN]' : '[OK]';
+  logEl.textContent = time + ' ' + prefix + ' ' + msg + '\n' + logEl.textContent;
+}
+
+/* ---------- update counters & lines ---------- */
+function updateLineNumbers(){
+  const text = codeEl.innerText.replace(/\t/g,'    ');
+  const lines = text.split('\n');
+  let html = '';
+  for(let i=1;i<=lines.length;i++) html += i + '\n';
+  lineNumbers.textContent = html;
+  lineCountEl.textContent = lines.length;
+  charCountEl.textContent = text.length;
+}
+codeEl.addEventListener('input',()=>{
+  updateLineNumbers();
+  // gentle syntax highlight: wrap tokens (non-destructive, uses innerHTML)
+  // We'll do minimal highlighting so caret isn't messed up too much
+  const txt = codeEl.innerText;
+  let html = txt
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // comments
+    .replace(/(\/\/.*?$)/gm, '<span class="tok-comment">$1</span>')
+    // numbers
+    .replace(/(\b\d+(\.\d+)?\b)/g, '<span class="tok-num">$1</span>')
+    // keywords (basic)
+    .replace(/\b(void|float|vec2|vec3|vec4|uniform|precision|if|else|for|while|return|main|varying|attribute|in|out|sampler2D)\b/g, '<span class="tok-key">$1</span>')
+    // function-ish
+    .replace(/(\b[a-zA-Z_]\w*(?=\())/g, '<span class="tok-fn">$1</span>');
+  // preserve caret — using simple approach
+  codeEl.innerHTML = html;
+  placeCaretAtEnd(codeEl);
 });
-editor.session.setOption("useWrapMode", true);
-editor.session.setTabSize(2);
-editor.session.setUseSoftTabs(true);
-editor.setValue(`// Paste your fragment shader here
-// Example demo shader
+
+/* ---------- caret helper (keep cursor at end on highlight) ---------- */
+function placeCaretAtEnd(el) {
+  el.focus();
+  if (typeof window.getSelection != "undefined" && typeof document.createRange != "undefined") {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+/* initialize */
+codeEl.innerText = `// Paste or write your fragment shader here
+// Example: simple shader
 precision mediump float;
 uniform float uTime;
 uniform vec2 uResolution;
@@ -230,592 +278,411 @@ void main(){
   vec2 uv = gl_FragCoord.xy / uResolution.xy;
   vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx + vec3(0,2,4));
   gl_FragColor = vec4(col,1.0);
-}`, -1);
+}`;
+updateLineNumbers();
 
-function updateCounts(){
-  const text = editor.getValue();
-  document.getElementById('linesCount').innerText = text.split('\\n').length;
-  document.getElementById('charsCount').innerText = text.length;
-}
-editor.session.on('change', ()=>{
-  updateCounts();
-  setMiniNote('Editing');
-});
-updateCounts();
-
-/* ------------------------
-   Utilities & state
-   ------------------------ */
-const consoleLog = document.getElementById('consoleLog');
-const changelogEl = document.getElementById('changelog');
-const logsInput = document.getElementById('logsInput');
-const progressBar = document.getElementById('progressBar');
-const statusEl = document.getElementById('status');
-let fixedShaderText = '';
-let currentFilename = 'fixed_shader.frag';
-
-function logConsole(msg, type='info'){
-  const line = document.createElement('div');
-  line.className = 'logLine ' + (type==='err' ? 'err' : (type==='ok' ? 'ok' : ''));
-  const time = new Date().toLocaleTimeString();
-  line.textContent = `[${time}] ${msg}`;
-  consoleLog.prepend(line);
-}
-function logChange(msg){
-  const line = document.createElement('div');
-  line.textContent = msg;
-  changelogEl.prepend(line);
-}
-
-function setProgress(p){
-  progressBar.style.width = p + '%';
-}
-function setMiniNote(t){
-  document.getElementById('miniNote').innerText = t;
-}
-function setStatus(t){ statusEl.innerText = t; }
-
-/* ------------------------
-   File upload
-   ------------------------ */
-document.getElementById('fileInput').addEventListener('change', async (ev)=>{
+/* ========== File handling ========== */
+document.querySelector('.fileWrap input[type=file]').addEventListener('change', async (ev)=>{
   const f = ev.target.files[0];
   if(!f) return;
   currentFilename = f.name;
   const text = await f.text();
-  editor.setValue(text, -1);
-  updateCounts();
-  logConsole('Loaded file: ' + f.name, 'ok');
+  codeEl.innerText = text;
+  updateLineNumbers();
+  log('Loaded file: ' + f.name);
+  setProgress(10);
 });
 
-/* ------------------------
-   Helper: simple safe compile fixer functions
-   ------------------------ */
-function ensurePrecision(code){
-  if(!/precision\\s+(lowp|mediump|highp)\\s+float\\s*;/.test(code)){
-    logChange('Inserted precision mediump float;');
-    return 'precision mediump float;\\n' + code;
-  }
-  return code;
+/* ========= Fixer Engine (advanced heuristics) ========= */
+function setProgress(p){
+  progressEl.style.width = p + '%';
 }
+function setStatus(s){ statusDot.textContent = s; }
 
-function ensurePsychUniforms(code){
-  const declares = [];
-  if(!/uniform\\s+float\\s+uTime\\b/.test(code)){ declares.push('uniform float uTime;'); }
-  if(!/uniform\\s+vec2\\s+uResolution\\b/.test(code)){ declares.push('uniform vec2 uResolution;'); }
-  if(!/uniform\\s+sampler2D\\s+uSampler\\b/.test(code)){ declares.push('uniform sampler2D uSampler;'); }
-  if(declares.length){
-    logChange('Added uniforms: ' + declares.join(' '));
-    return declares.join('\\n') + '\\n' + code;
+/* main fix function
+   - add precision if missing
+   - ensure main() exists
+   - add Psych uniforms if missing (uTime,uResolution,uSampler)
+   - replace deprecated functions (texture2D -> texture)
+   - guard divisions by zero
+   - fix common missing semicolons (smart)
+   - auto-close braces and parentheses
+*/
+function godlikeFix(code){
+  setStatus('Fixing...');
+  setProgress(20);
+  log('Starting GODMODE fix pass');
+
+  let original = code;
+  let out = code;
+
+  // normalize line endings
+  out = out.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+
+  // 1) Ensure precision directive for fragment shader
+  if(!/precision\s+(lowp|mediump|highp)\s+float\s*;/.test(out)){
+    out = 'precision mediump float;\n' + out;
+    log('Inserted missing precision mediump float;');
   }
-  return code;
-}
 
-function replaceDeprecatedTexture(code){
-  if(/texture2D\\(/.test(code)){
-    logChange('Replaced texture2D() -> texture() for compatibility');
-    return code.replace(/texture2D\\(/g,'texture(');
-  }
-  return code;
-}
+  setProgress(30);
 
-function smartSemicolons(code){
-  // only add semicolons to lines that likely need them (uniforms, assignments)
-  const lines = code.split('\\n');
-  for(let i=0;i<lines.length;i++){
-    let t = lines[i].trim();
-    if(!t) continue;
-    if(t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.startsWith('#')) continue;
-    if(/\\b(if|for|while|else|struct|precision|void|return)\\b/.test(t)) continue;
-    if(/[;,{]$/.test(t)) continue;
-    if(/=/.test(t) && !/==/.test(t)){
-      // add semicolon if looks like assignment or declaration
-      lines[i] = lines[i] + ';';
-    } else if(/^(uniform|attribute|varying|const|in|out)\\b/.test(t) && !t.endsWith(';')){
-      lines[i] = lines[i] + ';';
+  // 2) Psych Engine uniforms defaults (only add if not present)
+  const psychUniforms = [
+    {search:/\buniform\s+float\s+uTime\b/,'decl':'uniform float uTime;'},
+    {search:/\buniform\s+vec2\s+uResolution\b/,'decl':'uniform vec2 uResolution;'},
+    {search:/\buniform\s+sampler2D\s+uSampler\b/,'decl':'uniform sampler2D uSampler;'}
+  ];
+  let adds=0;
+  psychUniforms.forEach(u=>{
+    if(!u.search.test(out)){
+      out = u.decl + '\n' + out;
+      adds++;
     }
-  }
-  logChange('Smart semicolons pass applied');
-  return lines.join('\\n');
-}
+  });
+  if(adds) log('Added ' + adds + ' Psych Engine uniform declarations');
 
-function guardDivisionByZero(code){
-  // naive: replace "/ var" with "/ max(var, 1e-6)" for simple variable cases
-  // avoid numbers: if divisor starts with digit, skip
-  const out = code.replace(/\\/\\s*\\/\\s*\\(?([a-zA-Z_][\\w\\.]*)/g, function(_, g1){
-    if(/^\\d/.test(g1)) return '/ ' + g1;
+  setProgress(40);
+
+  // 3) Replace deprecated texture2D with texture (WebGL2 style) but keep compatibility
+  if(/texture2D\(/.test(out)){
+    out = out.replace(/texture2D\(/g,'texture(');
+    log('Translated texture2D() -> texture() for compatibility');
+  }
+
+  setProgress(50);
+
+  // 4) Smart semicolon insertion:
+  //   We only add semicolons to lines that look like statements but not to preprocessor, block starts, function headers
+  out = out.split('\n').map((ln, idx)=>{
+    const t = ln.trim();
+    if(!t) return ln;
+    if(t.startsWith('//')||t.startsWith('/*')||t.startsWith('*')||t.startsWith('#')) return ln;
+    // function header detection: "void main() {" or "vec3 foo(vec2 a) {"
+    if(/\b(if|for|while|else|return|struct)\b/.test(t)) return ln;
+    if(/\)\s*{/.test(t) || /\{$/.test(t) || /\}$/.test(t)) return ln;
+    // if line ends with ) or ; or , or : -> don't add
+    if(/[;,\)\{\}]$/.test(t)) return ln;
+    // if starts with 'uniform' or 'attribute' or 'varying' — add semicolon if missing
+    if(/^(uniform|attribute|varying|in|out|const)\b/.test(t) && !t.endsWith(';')){
+      return ln + ';';
+    }
+    // simple assignment detection: contains '=' and not function start
+    if(/=/.test(t) && !/\b(if|for|while)\b/.test(t) && !/==/.test(t)){
+      // avoid adding semicolon if it's function header accidentally caught
+      return ln + ';';
+    }
+    return ln;
+  }).join('\n');
+  log('Performed smart semicolon insertion pass');
+
+  setProgress(62);
+
+  // 5) Guard divisions by zero: replace patterns like (x / y) with (x / max(y, 0.000001))
+  //    only for obvious cases: / followed by variable or expression
+  out = out.replace(/\/\s*\(?([a-zA-Z_]\w*(?:\.[xyzw]{1,4})?(?:\s*\)|\b)?)/g, (m, g1)=>{
+    // avoid touching literal numbers
+    if(/^\d/.test(g1)) return '/' + g1;
+    // make simple guard
     return '/ max(' + g1 + ', 0.000001)';
   });
-  logChange('Division-by-zero guards inserted (best-effort)');
-  return out;
-}
+  log('Added division-by-zero guards where detected');
 
-/* ------------------------
-   GODMODE fixer (runs full pass)
-   ------------------------ */
-function godmodeFix(code){
-  setStatus('Fixing (GODMODE)…');
-  setProgress(10);
-  logConsole('Starting GODMODE fix pass', 'ok');
+  setProgress(74);
 
-  let out = code;
-  out = out.replace(/\\r\\n/g,'\\n').replace(/\\r/g,'\\n');
-  out = ensurePrecision(out); setProgress(22);
-  out = ensurePsychUniforms(out); setProgress(36);
-  out = replaceDeprecatedTexture(out); setProgress(48);
-  out = smartSemicolons(out); setProgress(64);
-  out = guardDivisionByZero(out); setProgress(80);
-
-  // close unbalanced braces/parents
-  const opens = (out.match(/\\{/g)||[]).length;
-  const closes = (out.match(/\\}/g)||[]).length;
+  // 6) Close unbalanced braces & parentheses
+  const opens = (out.match(/\{/g)||[]).length;
+  const closes = (out.match(/\}/g)||[]).length;
   if(opens > closes){
-    const diff = opens - closes;
-    out += '\\n' + '}'.repeat(diff);
-    logChange(`Auto-closed ${diff} missing brace(s)`);
+    out += '\n' + '}'.repeat(opens - closes);
+    log('Auto-closed ' + (opens-closes) + ' missing brace(s)');
   }
-  const op = (out.match(/\\(/g)||[]).length;
-  const cp = (out.match(/\\)/g)||[]).length;
-  if(op > cp){
-    const d = op - cp;
-    out += ')'.repeat(d);
-    logChange(`Auto-closed ${d} missing parenthesis`);
+  const opar = (out.match(/\(/g)||[]).length;
+  const cpar = (out.match(/\)/g)||[]).length;
+  if(opar > cpar){
+    out += ')'.repeat(opar-cpar);
+    log('Auto-closed ' + (opar-cpar) + ' missing parenthesis');
   }
 
-  // replace 'undefined' w/ 0.0
-  if(/\\bundefined\\b/.test(out)){
-    out = out.replace(/\\bundefined\\b/g,'0.0');
-    logChange('Replaced "undefined" -> 0.0');
+  setProgress(82);
+
+  // 7) Replace 'gl_FragColor' with proper output if user uses newer style (we keep gl_FragColor but ensure declared)
+  if(!/gl_FragColor/.test(out) && /\bmain\s*\(\s*\)/.test(out) && /vec4\s+/.test(out)){
+    // no action — can't reliably invent variable — just warn
+    log('Note: gl_FragColor not found; if using newer Shading Language outputs, ensure proper out variable is declared.');
   }
 
-  // ensure main exists
-  if(!/\\bvoid\\s+main\\s*\\(/.test(out)){
-    out += '\\nvoid main(){ gl_FragColor = vec4(0.0); }';
-    logChange('Appended safe main() to avoid compile error');
+  // 8) Replace undefined tokens like "undefined" with safe defaults
+  out = out.replace(/\bundefined\b/g,'0.0');
+  log('Patched literal "undefined" -> 0.0');
+
+  setProgress(90);
+
+  // 9) Make sure main() exists; if not, wrap fragment body into minimal fragment main that writes black (best-effort)
+  if(!/\bvoid\s+main\s*\(/.test(out)){
+    out += '\nvoid main(){ gl_FragColor = vec4(0.0,0.0,0.0,1.0); }';
+    log('No main() found — appended a safe main() to avoid compile error');
   }
 
+  setProgress(96);
+
+  // final normalization: trim trailing spaces
+  out = out.replace(/[ \t]+$/gm, '');
   setProgress(100);
   setTimeout(()=>setProgress(0), 700);
-  setStatus('Fixed ✓');
-  logConsole('GODMODE fix pass complete', 'ok');
+
+  log('GODMODE fix pass complete');
+
+  fixedShaderText = out;
   return out;
 }
 
-/* ------------------------
-   Parse compile logs & apply targeted fixes
-   ------------------------ */
-function parseWebGLLog(text){
-  // common WebGL errors look like:
-  // ERROR: 0:45: 'assign' : cannot convert from 'vec4' to 'float'
-  // or: ERROR: 0:12: 'someVar' : undeclared identifier
-  // Haxe compiler logs may differ, include names/line numbers
-  const lines = text.split('\\n').map(l=>l.trim()).filter(Boolean);
-  const parsed = [];
-  for(const l of lines){
-    // try WebGL form
-    let m = l.match(/ERROR:\\s*\\d+:(\\d+):\\s*'([^']+)'\\s*:\\s*(.*)/i);
-    if(m){
-      parsed.push({type:'webgl', line: parseInt(m[1]), token: m[2], msg: m[3], raw: l});
-      continue;
-    }
-    // try format: ERROR: 'assign' : cannot convert from 'vec4' to 'float' at line 45
-    m = l.match(/(\\d+):\\s*(error|warning)/i);
-    if(m){
-      parsed.push({type:'unknown', line: parseInt(m[1]), raw: l});
-      continue;
-    }
-    // haxe/generic undeclared: "someVar was not declared"
-    m = l.match(/undeclared\\s+identifier\\s+'?([a-zA-Z_][\\w]*)'?/i);
-    if(m){
-      parsed.push({type:'undeclared', token: m[1], raw:l});
-    } else {
-      // push line as generic
-      parsed.push({type:'raw', raw:l});
-    }
-  }
-  return parsed;
+/* ========== Live WebGL Preview (very defensive) ========== */
+const gl = glcanvas.getContext('webgl') || glcanvas.getContext('experimental-webgl');
+if(!gl){
+  log('WebGL not available in this browser — preview disabled', 'err');
+  document.getElementById('previewBtn').disabled = true;
 }
 
-function applyFixesFromLogs(logText){
-  setStatus('Analyzing logs…');
-  logConsole('Parsing logs for fixes', 'ok');
-  const parsed = parseWebGLLog(logText);
-  if(parsed.length === 0){
-    logConsole('No recognizable errors found in logs', 'err');
-    setStatus('No fixes found');
-    return;
+function resizeCanvasToDisplaySize(canvas){
+  const displayWidth  = Math.floor(canvas.clientWidth * devicePixelRatio);
+  const displayHeight = Math.floor(canvas.clientHeight * devicePixelRatio);
+  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+    canvas.width  = displayWidth;
+    canvas.height = displayHeight;
+    return true;
   }
-
-  let code = editor.getValue();
-  const codeLines = code.split('\\n');
-  let fixesApplied = 0;
-
-  for(const entry of parsed){
-    if(entry.type === 'webgl'){
-      const ln = Math.max(1, Math.min(codeLines.length, entry.line));
-      const lineText = codeLines[ln - 1] || '';
-      // analyze message
-      const m1 = entry.msg.match(/cannot convert from\\s+'([a-zA-Z0-9_]+)'\\s+to\\s+'([a-zA-Z0-9_]+)'/i);
-      if(m1){
-        const from = m1[1], to = m1[2];
-        // if vec4 -> float, try replace assignment with .x or length()
-        if(from.startsWith('vec') && to === 'float'){
-          // attempt: replace right-hand-side expression with .x when it's a var or expression (best-effort)
-          // e.g. "float a = something;" where something is vec4 -> change to something.x
-          const assignMatch = lineText.match(/=\\s*([^;]+)/);
-          if(assignMatch){
-            const rhs = assignMatch[1].trim();
-            const replacement = rhs + '.x';
-            codeLines[ln - 1] = lineText.replace(rhs, replacement);
-            logChange(`Line ${ln}: converted ${rhs} -> ${replacement} to satisfy vec->float`);
-            fixesApplied++;
-            continue;
-          }
-        }
-        // other conversions: vec4->vec3 maybe drop .w, try .xyz
-        if(from.startsWith('vec') && to === 'vec3'){
-          const assignMatch = lineText.match(/=\\s*([^;]+)/);
-          if(assignMatch){
-            const rhs = assignMatch[1].trim();
-            const replacement = rhs + '.xyz';
-            codeLines[ln - 1] = lineText.replace(rhs, replacement);
-            logChange(`Line ${ln}: converted ${rhs} -> ${replacement} to match vec3`);
-            fixesApplied++;
-            continue;
-          }
-        }
-        // fallback: add explicit cast comment for manual review
-        logChange(`Line ${ln}: conversion ${from}->${to} detected. Manual review may be required`);
-        continue;
-      }
-
-      // undeclared identifier
-      const m2 = entry.msg.match(/undeclared identifier/i);
-      if(m2 || /undeclared/i.test(entry.msg.toLowerCase())){
-        const name = entry.token || (entry.msg.match(/'([^']+)'/) && RegExp.$1);
-        if(name){
-          // insert a safe declaration above line
-          const decl = `float ${name} = 0.0; // auto-declared by fixer`;
-          codeLines.splice(Math.max(0, ln-1), 0, decl);
-          logChange(`Inserted declaration for '${name}' at line ${Math.max(1, ln)}`);
-          fixesApplied++;
-          continue;
-        }
-      }
-
-      // cannot read property etc: generic -> try no-op
-      // other: try to catch 'assign' 'cannot convert from' inside msg already handled
-    } else if(entry.type === 'undeclared'){
-      const name = entry.token;
-      const decl = `float ${name} = 0.0; // auto-declared by fixer`;
-      codeLines.unshift(decl);
-      logChange(`Inserted top-level declaration for '${name}'`);
-      fixesApplied++;
-    } else {
-      logChange(`Unrecognized log: ${entry.raw}`);
-    }
-  }
-
-  if(fixesApplied > 0){
-    const newCode = codeLines.join('\\n');
-    editor.setValue(newCode, -1);
-    updateCounts();
-    logConsole(`Applied ${fixesApplied} fixes based on logs`, 'ok');
-    setStatus('Fixes applied');
-  } else {
-    logConsole('No automatic fixes could be applied from logs — see changelog for hints', 'err');
-    setStatus('No auto-fixes');
-  }
+  return false;
 }
 
-/* ------------------------
-   Buttons
-   ------------------------ */
-document.getElementById('autoFixBtn').addEventListener('click', ()=>{
-  const src = editor.getValue();
-  changelogEl.innerHTML = ''; // clear previous changelog
-  const fixed = godmodeFix(src);
-  editor.setValue(fixed, -1);
-  updateCounts();
-  document.getElementById('downloadBtn').style.display = 'inline-block';
-});
-
-document.getElementById('fixWithLogsBtn').addEventListener('click', ()=>{
-  // open logs input focus
-  logsInput.focus();
-  setMini('Paste compile logs, then click Apply Fixes');
-});
-
-document.getElementById('applyLogFix').addEventListener('click', ()=>{
-  const txt = logsInput.value.trim();
-  if(!txt){ logConsole('No logs provided', 'err'); return; }
-  applyFixesFromLogs(txt);
-});
-
-document.getElementById('clearLogsInput').addEventListener('click', ()=>{
-  logsInput.value = '';
-  logConsole('Logs input cleared');
-});
-
-document.getElementById('previewBtn').addEventListener('click', ()=>{
-  // compile & run shader in preview
-  const shaderSrc = editor.getValue();
-  compileAndPreview(shaderSrc);
-});
-
-document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const code = editor.getValue();
-  const blob = new Blob([code], {type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = currentFilename.endsWith('.frag')||currentFilename.endsWith('.glsl') ? ('fixed-' + currentFilename) : 'fixed_shader.frag';
-  a.click();
-  logConsole('Downloaded fixed shader', 'ok');
-});
-
-document.getElementById('exampleBtn').addEventListener('click', ()=>{
-  const demo = `// Cyber Neon demo
-precision mediump float;
-uniform float uTime;
-uniform vec2 uResolution;
-
-void main(){
-  vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-  float d = length(uv);
-  vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2,4));
-  col *= 1.0/(1.0 + d*3.0);
-  gl_FragColor = vec4(col,1.0);
-}`;
-  editor.setValue(demo, -1);
-  updateCounts();
-  logConsole('Injected example shader', 'ok');
-});
-
-/* ------------------------
-   Comments (localStorage)
-   ------------------------ */
-const commentsKey = 'godlike_shader_comments_v1';
-function loadComments(){
-  const raw = localStorage.getItem(commentsKey);
-  if(!raw) return [];
-  try{ return JSON.parse(raw); } catch(e){ return []; }
-}
-function saveComments(list){
-  localStorage.setItem(commentsKey, JSON.stringify(list));
-}
-function renderComments(){
-  const list = loadComments();
-  const container = document.getElementById('commentsList');
-  container.innerHTML = '';
-  for(let i=list.length-1;i>=0;i--){
-    const c = list[i];
-    const card = document.createElement('div');
-    card.className = 'commentCard';
-    card.innerHTML = `<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${escapeHtml(c.name||'anon')}</strong><div class="meta">${new Date(c.ts).toLocaleString()}</div></div><div style="margin-top:6px">${escapeHtml(c.msg)}</div></div><div style="display:flex;flex-direction:column;gap:6px"><button data-i="${i}" class="likeBtn">❤ ${c.likes||0}</button><button data-i="${i}" class="delBtn">✖</button></div>`;
-    container.appendChild(card);
-  }
-  // bind like & delete
-  container.querySelectorAll('.likeBtn').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      const idx = parseInt(b.dataset.i);
-      const arr = loadComments();
-      arr[idx].likes = (arr[idx].likes||0) + 1;
-      saveComments(arr);
-      renderComments();
-    });
-  });
-  container.querySelectorAll('.delBtn').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      const idx = parseInt(b.dataset.i);
-      const arr = loadComments();
-      arr.splice(idx,1);
-      saveComments(arr);
-      renderComments();
-    });
-  });
-}
-document.getElementById('postComment').addEventListener('click', ()=>{
-  const name = document.getElementById('commentName').value || 'anon';
-  const msg = document.getElementById('commentText').value;
-  if(!msg.trim()) return;
-  const arr = loadComments();
-  arr.push({name, msg, ts: Date.now(), likes:0});
-  saveComments(arr);
-  document.getElementById('commentText').value = '';
-  renderComments();
-});
-function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-renderComments();
-
-/* ------------------------
-   Console copy/clear
-   ------------------------ */
-document.getElementById('copyConsole').addEventListener('click', ()=>{
-  navigator.clipboard.writeText(consoleLog.innerText).then(()=>logConsole('Console copied to clipboard', 'ok'));
-});
-document.getElementById('clearConsole').addEventListener('click', ()=>{
-  consoleLog.innerText = '';
-});
-
-/* ------------------------
-   Quick UI helpers
-   ------------------------ */
-function setMini(s){ document.getElementById('miniNote').innerText = s; }
-
-/* ------------------------
-   WebGL Preview (defensive)
-   ------------------------ */
-const canvas = document.getElementById('glPreview');
-const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-function resizeCanvas(){
-  const w = canvas.clientWidth * devicePixelRatio;
-  const h = canvas.clientHeight * devicePixelRatio;
-  if(canvas.width !== w || canvas.height !== h){
-    canvas.width = w; canvas.height = h;
-  }
-}
-function compileShader(type, source){
-  const s = gl.createShader(type);
-  gl.shaderSource(s, source);
-  gl.compileShader(s);
-  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
-    const info = gl.getShaderInfoLog(s);
-    gl.deleteShader(s);
-    throw new Error(info);
-  }
-  return s;
-}
-let anim = null;
-let program = null;
+let animationRequest = null;
+let compiledProgram = null;
 let startTime = performance.now();
 
-function compileAndPreview(fragmentSource){
-  if(!gl){
-    logConsole('WebGL not available — preview disabled', 'err');
-    return;
+function compileAndRun(fragmentSource){
+  if(!gl) return log('No WebGL context', 'err');
+  resizeCanvasToDisplaySize(glcanvas);
+
+  // minimal vertex shader
+  const vsSrc = `
+    attribute vec2 aPos;
+    void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+  // attempt to compile shaders
+  function createShader(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      const info = gl.getShaderInfoLog(s);
+      gl.deleteShader(s);
+      throw new Error(info);
+    }
+    return s;
   }
-  resizeCanvas();
-  setStatus('Compiling preview...');
+
   try{
-    // simple vertex shader
-    const vsSrc = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }';
-    const vs = compileShader(gl.VERTEX_SHADER, vsSrc);
-    const fs = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
-    if(program) { gl.deleteProgram(program); program = null; }
+    // wrap fragment if missing main guard etc (we rely on the fixer)
+    const fs = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+    const vs = createShader(gl.VERTEX_SHADER, vsSrc);
+    if(compiledProgram) {
+      gl.deleteProgram(compiledProgram);
+      compiledProgram = null;
+    }
     const prog = gl.createProgram();
-    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
     gl.linkProgram(prog);
     if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
       const info = gl.getProgramInfoLog(prog);
       gl.deleteProgram(prog);
       throw new Error('Link error: ' + info);
     }
-    program = prog;
-    setStatus('Preview running');
-    logConsole('Shader compiled & linked successfully', 'ok');
+    compiledProgram = prog;
+    // clean up shaders (attached)
+    gl.detachShader(prog, vs); gl.detachShader(prog, fs);
+    log('Shader compiled & linked successfully');
     startTime = performance.now();
-    // start rendering loop
-    if(anim) cancelAnimationFrame(anim);
+    // start render loop
+    if(animationRequest) cancelAnimationFrame(animationRequest);
     function render(){
-      resizeCanvas();
-      gl.viewport(0,0,canvas.width,canvas.height);
+      resizeCanvasToDisplaySize(glcanvas);
+      gl.viewport(0,0,glcanvas.width,glcanvas.height);
       gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
 
-      gl.useProgram(program);
-      const timeLoc = gl.getUniformLocation(program, 'uTime');
-      const resLoc = gl.getUniformLocation(program, 'uResolution');
-      const samplerLoc = gl.getUniformLocation(program, 'uSampler');
+      gl.useProgram(prog);
+      // set uniforms if present
+      const timeLoc = gl.getUniformLocation(prog, 'uTime');
+      const resLoc = gl.getUniformLocation(prog, 'uResolution');
+      const samplerLoc = gl.getUniformLocation(prog, 'uSampler');
       const t = (performance.now() - startTime) / 1000;
       if(timeLoc) gl.uniform1f(timeLoc, t);
-      if(resLoc) gl.uniform2f(resLoc, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio);
+      if(resLoc) gl.uniform2f(resLoc, glcanvas.width / devicePixelRatio, glcanvas.height / devicePixelRatio);
       if(samplerLoc){
-        const tx = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tx);
+        // create a simple 1x1 white texture if none provided
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tx);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.uniform1i(samplerLoc, 0);
       }
-      const verts = new Float32Array([-1,-1,1,-1,-1,1,1,1]);
-      const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-      gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
-      const pos = gl.getAttribLocation(program, 'aPos');
-      if(pos >= 0){
-        gl.enableVertexAttribArray(pos);
-        gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+      // full-screen triangle (two triangles)
+      const vertices = new Float32Array([-1,-1,1,-1,-1,1,1,1]);
+      const vbo = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+      const posLoc = gl.getAttribLocation(prog, 'aPos');
+      if(posLoc >= 0){
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
       }
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.deleteBuffer(vbo);
-      anim = requestAnimationFrame(render);
+
+      animationRequest = requestAnimationFrame(render);
     }
     render();
   }catch(e){
-    // parse compile errors and show them
-    logConsole('Preview compile error: ' + e.message, 'err');
+    log('Compile/Link failed: ' + e.message, 'err');
     setStatus('Compile Error');
-    // also push to logsInput for copy/paste convenience
-    logsInput.value = e.message + '\\n' + logsInput.value;
   }
 }
 
-/* ------------------------
-   Auto-run small debounced preview on edit (optional)
-   ------------------------ */
-let debounceTimer = null;
-editor.session.on('change', ()=>{
-  if(debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(()=>{
-    // keep light: try to compile quickly but don't spam errors
-    // only compile if the code has 'main' - else skip
-    const code = editor.getValue();
-    if(/void\\s+main\\s*\\(/.test(code)) {
-      // try compile silently
-      try{
-        compileAndPreview(code);
-      }catch(e){ /* ignore */ }
-    }
-  }, 850);
-});
-
-/* ------------------------
-   Apply Fixes flow: combine log-based + full GODMODE
-   ------------------------ */
-document.getElementById('fixWithLogsBtn').addEventListener('click', ()=>{
-  // focus logs area
-  logsInput.focus();
-});
-
-document.getElementById('applyLogFix').addEventListener('click', ()=>{
-  const logs = logsInput.value;
-  if(!logs.trim()){
-    logConsole('No logs to parse', 'err');
-    return;
+/* ========== Buttons behavior ========== */
+document.getElementById('fixBtn').addEventListener('click', ()=>{
+  const src = codeEl.innerText;
+  setStatus('Running fixer');
+  try{
+    const fixed = godlikeFix(src);
+    // replace editor content with fixed (preserve caret at end)
+    codeEl.innerText = fixed;
+    updateLineNumbers();
+    placeCaretAtEnd(codeEl);
+    downloadBtn.style.display = 'inline-block';
+    downloadBtn.onclick = downloadFixed;
+    setStatus('Fixed ✓');
+    animateConfetti(); // celebration
+  }catch(e){
+    log('Fixer crashed: ' + e.message, 'err');
+    setStatus('Fixer Error');
   }
-  logConsole('Applying fixes from logs...', 'ok');
-  applyFixesFromLogs(logs);
-  // after applying, offer to run GODMODE as safety (non-blocking)
-  setTimeout(()=>{
-    const code = editor.getValue();
-    const patched = godmodeFix(code);
-    editor.setValue(patched, -1);
-    updateCounts();
-  }, 250);
 });
 
-/* ------------------------
-   small helpers
-   ------------------------ */
-function updateCounts(){ updateCounts = updateCounts; /* placeholder so linters don't complain */ }
-updateCounts = function(){ const text = editor.getValue(); document.getElementById('linesCount').innerText = text.split('\\n').length; document.getElementById('charsCount').innerText = text.length; };
-updateCounts();
+document.getElementById('previewBtn').addEventListener('click', ()=>{
+  const src = codeEl.innerText;
+  setStatus('Compiling preview...');
+  try{
+    compileAndRun(src);
+    setStatus('Preview running');
+  }catch(e){
+    log('Preview error: ' + e.message, 'err');
+    setStatus('Preview Error');
+  }
+});
 
-/* initial status */
+document.getElementById('randomBtn').addEventListener('click', ()=>{
+  // inject a colorful example with many animations (nice demo)
+  const sample = `// Demo: colorful cosine animation
+precision mediump float;
+uniform float uTime;
+uniform vec2 uResolution;
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
+  float d = length(uv);
+  vec3 col = vec3(0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2,4)));
+  col *= 1.0/(1.0 + d*3.0);
+  gl_FragColor = vec4(col,1.0);
+}`;
+  codeEl.innerText = sample;
+  updateLineNumbers();
+  log('Injected example shader');
+});
+
+function downloadFixed(){
+  const txt = codeEl.innerText;
+  const blob = new Blob([txt], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentFilename.endsWith('.frag')||currentFilename.endsWith('.glsl') ? ('fixed-' + currentFilename) : ('fixed_shader.frag');
+  a.click();
+  URL.revokeObjectURL(url);
+  log('Downloaded fixed shader');
+}
+
+/* ========== Log copy / clear ========== */
+document.getElementById('copyLog').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(logEl.textContent).then(()=>log('Log copied to clipboard'));
+});
+document.getElementById('clearLog').addEventListener('click', ()=>{
+  logEl.textContent = '';
+});
+
+/* ========== Confetti animation (canvas) ========= */
+confettiCanvas.width = innerWidth;
+confettiCanvas.height = innerHeight;
+const cctx = confettiCanvas.getContext('2d');
+let confettiParticles = [];
+function spawnConfetti(){
+  const count = 40;
+  for(let i=0;i<count;i++){
+    confettiParticles.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*200,
+      vx: (Math.random()-0.5)*4,
+      vy: 1 + Math.random()*3,
+      size: 6 + Math.random()*10,
+      rot: Math.random()*360,
+      spin: (Math.random()-0.5)*10,
+      color: ['#ff6b6b','#6ef0a2','#6b3dff','#4ee0ff','#ffd88e'][Math.floor(Math.random()*5)],
+      life: 120 + Math.random()*160
+    });
+  }
+}
+function animateConfetti(){
+  spawnConfetti();
+  let t0 = performance.now();
+  function step(){
+    cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    for(let i=confettiParticles.length-1;i>=0;i--){
+      const p = confettiParticles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.rot += p.spin; p.life--;
+      cctx.save();
+      cctx.translate(p.x, p.y);
+      cctx.rotate(p.rot * Math.PI/180);
+      cctx.fillStyle = p.color;
+      cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      cctx.restore();
+      if(p.y > confettiCanvas.height + 50 || p.life <= 0) confettiParticles.splice(i,1);
+    }
+    if(confettiParticles.length>0) requestAnimationFrame(step);
+    else cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+  }
+  requestAnimationFrame(step);
+}
+
+/* handle resizing */
+window.addEventListener('resize', ()=> {
+  confettiCanvas.width = innerWidth;
+  confettiCanvas.height = innerHeight;
+  resizeCanvasToDisplaySize(glcanvas);
+});
+
+/* small accessibility: keyboard shortcuts */
+window.addEventListener('keydown',(e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
+    e.preventDefault();
+    downloadFixed();
+  }
+});
+
+/* final small polish logs */
+log('GODLIKE Shader Fixer ready — paste shader and hit AUTO-FIX.');
 setStatus('Ready');
-logConsole('GODLIKE Shader Fixer+ ready — paste shader and press AUTO-FIX or Live Preview.', 'ok');
-
 </script>
 </body>
 </html>
