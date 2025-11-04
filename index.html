@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Psych Shader Fixer</title>
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100vh;
+  }
+  canvas {
+    border: 2px solid #fff;
+    margin-top: 20px;
+    image-rendering: pixelated;
+  }
+  textarea {
+    margin-top: 20px;
+    width: 90%;
+    height: 100px;
+    background: #222;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    font-family: monospace;
+    resize: none;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #444;
+    border: 1px solid #fff;
+    color: #fff;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Psych Shader Fixer</h1>
+
+<canvas id="shaderCanvas" width="300" height="300"></canvas>
+
+<textarea id="shaderCode">// Example: simple color inversion
+void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+    vec2 uv = fragCoord/iResolution.xy;
+    vec4 color = texture(iChannel0, uv);
+    fragColor = vec4(1.0 - color.rgb, color.a);
+}</textarea>
+
+<button onclick="updateShader()">Apply Shader</button>
+
+<script type="x-shader/x-fragment" id="defaultShader">
+void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+    vec2 uv = fragCoord/iResolution.xy;
+    vec4 color = texture(iChannel0, uv);
+    fragColor = color;
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/glslCanvas@0.2.2/dist/glslCanvas.min.js"></script>
+<script>
+const canvas = document.getElementById('shaderCanvas');
+const sandbox = new GlslCanvas(canvas);
+
+// Load BF sprite as texture
+const bfImg = new Image();
+bfImg.src = 'https://i.imgur.com/Q2aN3fT.png'; // replace with your BF sprite URL
+bfImg.onload = () => {
+    sandbox.setUniform('iChannel0', bfImg);
+};
+
+// Default shader
+sandbox.load(document.getElementById('defaultShader').textContent);
+
+// Shader editor
+function updateShader() {
+    const code = document.getElementById('shaderCode').value;
+    sandbox.load(code);
+}
+
+// Animate (so you can do time-based shaders)
+function animate(time) {
+    sandbox.setUniform('iTime', time / 1000);
+    sandbox.setUniform('iResolution', [canvas.width, canvas.height]);
+    requestAnimationFrame(animate);
+}
+animate(0);
+</script>
+
+</body>
+</html>
