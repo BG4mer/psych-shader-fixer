@@ -1,1000 +1,820 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GODLIKE Shader Fixer — Online-ready Comments + Fix-with-Logs</title>
-<meta name="color-scheme" content="dark">
+<title>GODLIKE Shader Fixer+ — Cyber-Neon</title>
+
+<!-- Ace Editor CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.2/ace.js" integrity="sha512-6p8nqgk8mQyqG1m0qfQ7Yg1Q41mY5N6lq2g4tR6g0P4Cs1xN38nYjz2Q0XH5g2o6x6y4n7xQ6r9b3x0u6y9vgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 <style>
-:root{
-  --bg1:#050717; --bg2:#07132a;
-  --accent1:#4ee0ff; --accent2:#b36bff;
-  --muted:#9fb9ff66; --glass:rgba(255,255,255,0.04);
-  --ui-scale:1;
-  --max-width:1200px;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;padding:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,monospace;color:#eaf6ff;overflow:auto}
-body{display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}
+  :root{
+    --bg:#060818;
+    --panel:#081028;
+    --glass: rgba(255,255,255,0.03);
+    --accent1:#6b3dff;
+    --accent2:#00e0ff;
+    --neon:#8dfcff;
+    --muted:#9fb9ff66;
+    --danger:#ff7a7a;
+    --success:#6ef0a2;
+  }
+  html,body{height:100%;margin:0;padding:0;background:radial-gradient(1200px 600px at 10% 10%, rgba(107,61,255,0.06), transparent), radial-gradient(800px 400px at 90% 90%, rgba(0,224,255,0.04), transparent), var(--bg); color:#e8f5ff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; overflow:hidden;}
+  /* floating neon blobs */
+  .bgBlobs { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .blob { position:absolute; filter:blur(60px); opacity:0.6; transform:translate3d(0,0,0); animation: drift linear infinite; }
+  .blob.a{ width:520px; height:520px; left:-10%; top:0; background:linear-gradient(120deg,var(--accent1),#ff66b3); animation-duration:26s; }
+  .blob.b{ width:360px; height:360px; right:-10%; bottom:-5%; background:linear-gradient(120deg,var(--accent2),#6b3dff); animation-duration:32s; opacity:.45; }
+  @keyframes drift { 0% { transform:translateY(0) rotate(0deg) } 50% { transform:translateY(-30px) rotate(180deg) } 100% { transform:translateY(0) rotate(360deg) } }
 
-/* background blobs */
-.bgwrap{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.blob{position:absolute;border-radius:50%;filter:blur(72px);opacity:.55;will-change:transform;mix-blend-mode:screen}
-.blob.a{width:760px;height:760px;left:-14%;top:2%;background:linear-gradient(45deg,#6b3dff,#00f0ff);animation:floaty 30s linear infinite}
-.blob.b{width:520px;height:520px;right:-8%;bottom:-6%;background:linear-gradient(45deg,#ff66b3,#6b3dff);animation:floaty 36s linear infinite;opacity:.36}
-@keyframes floaty{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-60px) rotate(180deg)}100%{transform:translateY(0) rotate(360deg)}}
+  /* layout */
+  .app { position:relative; z-index:2; max-width:1200px; margin:18px auto; padding:18px; box-sizing:border-box; display:flex; gap:12px; height:calc(100vh - 36px); }
+  .left { flex:1; display:flex; flex-direction:column; gap:12px; min-width:220px; }
+  .right { width:420px; display:flex; flex-direction:column; gap:12px; }
 
-/* layout */
-.app{position:relative;z-index:2;width:100%;max-width:var(--max-width);transition:transform .25s}
-.panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:14px;box-shadow:0 30px 90px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(6px)}
-.header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-.logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,0.35)}
-.h1{margin:0;font-size:20px;color:var(--accent1);letter-spacing:.6px}
-.lead{margin:0;color:var(--muted);font-size:13px}
+  .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
 
-/* controls */
-.controls{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;align-items:center}
-.btn{border:0;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:800;letter-spacing:.6px;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041826;box-shadow:0 8px 30px rgba(179,107,255,0.12);transition:transform .12s,box-shadow .12s}
-.btn:active{transform:translateY(1px)}
-.btn.ghost{background:transparent;color:#cfe9ff;border:1px solid rgba(255,255,255,0.04);box-shadow:none}
-.fileWrap{position:relative;display:inline-block}
-input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  header.top { display:flex; gap:12px; align-items:center; }
+  .logo { width:72px; height:72px; border-radius:12px; background: linear-gradient(135deg,var(--accent1),var(--accent2)); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 26px rgba(107,61,255,0.12); }
+  .logo svg{ filter:drop-shadow(0 8px 18px rgba(0,224,255,0.08)); }
 
-/* main grid */
-.grid{display:grid;grid-template-columns:1fr 520px;gap:14px;align-items:start}
-@media (max-width:1180px){ .grid{grid-template-columns:1fr} }
+  .title { flex:1; }
+  h1 { margin:0; font-size:18px; color:var(--neon); text-shadow:0 6px 26px rgba(0,224,255,0.06); letter-spacing:0.4px; }
+  p.sub { margin:2px 0 0 0; font-size:12px; color:var(--muted); }
 
-/* editor */
-.editorBox{min-height:420px;border-radius:12px;overflow:hidden;position:relative}
-.ln{position:absolute;left:0;top:0;bottom:0;width:54px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));color:#9fb9ff66;padding:10px;box-sizing:border-box;font-size:12px;line-height:18px;user-select:none}
-.codeArea{margin-left:54px;height:100%;width:100%;box-sizing:border-box;background:#061029;color:#dff3ff;font-family:ui-monospace,monospace;font-size:13px;padding:10px;outline:none;resize:none;overflow:auto;line-height:18px;white-space:pre;caret-color:var(--accent1)}
-.codeArea[contenteditable]{-webkit-user-select:text}
+  .controls { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  .btn { border:0; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:700; letter-spacing:0.5px; color:#041826; background:linear-gradient(90deg,var(--accent2),var(--accent1)); box-shadow:0 6px 20px rgba(107,61,255,0.08); transition:transform .12s ease, box-shadow .12s ease; }
+  .btn:hover{ transform:translateY(-3px); }
+  .btn.ghost { background:transparent; color:var(--neon); border:1px solid rgba(255,255,255,0.04); box-shadow:none; }
+  .fileWrap { position:relative; overflow:hidden; border-radius:10px; }
+  input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
 
-/* preview */
-.previewCard{padding:10px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));min-height:300px;position:relative;overflow:hidden}
-#glcanvas{border-radius:8px;background:#000;display:block;max-width:100%;touch-action:none}
+  .editorPanel { flex:1; display:flex; flex-direction:column; gap:10px; min-height:300px; }
+  #editorContainer { height:100%; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.03); }
+  #aceEditor { width:100%; height:520px; }
 
-/* right column extras */
-.rightCol .panel{margin-bottom:12px}
-.log{height:160px;overflow:auto;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;font-size:12px;color:#cfe9ff;white-space:pre-wrap}
-.small{font-size:12px}
-.progressWrap{height:8px;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden}
-.progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width .4s cubic-bezier(.2,.9,.2,1);box-shadow:0 6px 20px rgba(78,224,255,0.08)}
+  .miniRow { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:6px; }
+  .muted { color:var(--muted); font-size:13px; }
 
-/* fix-with-logs area */
-.fixLogs{display:flex;flex-direction:column;gap:8px}
-.fixLogs textarea{width:100%;min-height:80px;padding:10px;border-radius:8px;background:#041227;color:#eaf6ff;border:1px solid rgba(255,255,255,0.04);resize:vertical;font-family:ui-monospace,monospace}
+  /* preview */
+  .preview { height:300px; border-radius:10px; overflow:hidden; position:relative; }
+  #glPreview { width:100%; height:100%; display:block; background:#000; }
 
-/* comment system */
-.comments{display:flex;flex-direction:column;gap:8px}
-.commentForm{display:flex;gap:8px;align-items:flex-start}
-.commentForm input,.commentForm textarea{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:#041227;color:#eaf6ff}
-.commentList{max-height:260px;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-.comment{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:8px}
+  .logBox { height:150px; overflow:auto; background:rgba(0,0,0,0.28); border-radius:8px; padding:10px; font-family:monospace; font-size:13px; color:#cfe9ff; white-space:pre-wrap; box-shadow: inset 0 4px 20px rgba(0,0,0,0.6); }
+  .logLine.ok{ color:var(--success); }
+  .logLine.err{ color:var(--danger); }
 
-/* modal for connecting Firebase (hidden by default) */
-.adminNote{font-size:12px;color:var(--muted);margin-top:6px}
+  /* fix-with-logs */
+  .logsPanel { margin-top:10px; display:flex; gap:8px; }
+  .logsPanel textarea{ flex:1; height:120px; resize:vertical; border-radius:8px; padding:8px; background:#07122a; border:1px solid rgba(255,255,255,0.03); color:#e6f6ff; font-family:monospace; }
 
-/* confetti */
-.confetti{position:fixed;z-index:9999;pointer-events:none}
+  /* comment section */
+  .comments { max-height:260px; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:6px; }
+  .commentCard{ background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); padding:8px; border-radius:8px; display:flex; gap:8px; align-items:flex-start; }
+  .commentCard .meta{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .commentCard button{ border:0; background:transparent; color:var(--muted); cursor:pointer; font-weight:700; padding:6px; border-radius:6px; }
 
-/* footer */
-.footerNote{color:var(--muted);font-size:12px;margin-top:8px}
+  /* progress bar & typewriter effect */
+  .progressWrap { height:8px; background:rgba(255,255,255,0.03); border-radius:8px; overflow:hidden; }
+  .progressBar { height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent1)); transition:width .45s cubic-bezier(.2,.9,.2,1); box-shadow:0 6px 20px rgba(0,224,255,0.06); }
+
+  /* tiny ripples */
+  .ripple { position:relative; overflow:hidden; }
+  .ripple:active::after{ content:""; position:absolute; left:0; top:0; width:100%; height:100%; background:radial-gradient(circle, rgba(255,255,255,0.06) 0, rgba(255,255,255,0) 60%); opacity:1; animation:rippleAnim .6s ease-out forwards; }
+  @keyframes rippleAnim{ 0%{ transform:scale(.2); opacity:1 } 100%{ transform:scale(2); opacity:0 } }
+
+  /* small responsive behavior */
+  @media (max-width:980px){
+    .app{ flex-direction:column; height:unset; padding-bottom:80px; overflow:auto; }
+    .right{ width:100%; order:2; }
+    .left{ order:1; }
+    #aceEditor{ height:420px; }
+  }
+
+  footer{ position:fixed; left:10px; bottom:10px; color:var(--muted); font-size:12px; z-index:5; }
 </style>
 </head>
 <body>
-<div class="bgwrap" aria-hidden="true"><div class="blob a"></div><div class="blob b"></div></div>
-
-<div class="app">
-  <div class="panel header" style="align-items:center;">
-    <div class="logo" aria-hidden>
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M2 12l3-3 4 4 8-8 5 5" stroke="#041826" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>
-    <div style="flex:1">
-      <div class="h1">GODLIKE Shader Fixer</div>
-      <div class="lead">Upload .frag/.hx, auto-fix, preview (interactive), fix-with-logs, online-ready comments (Firebase placeholders).</div>
-    </div>
-    <div style="width:200px;text-align:right">
-      <div class="small" id="statusLabel">Status: Ready</div>
-    </div>
+  <div class="bgBlobs" aria-hidden>
+    <div class="blob a"></div>
+    <div class="blob b"></div>
   </div>
 
-  <div class="grid" style="margin-top:12px">
-    <!-- LEFT: editor & fix w/ logs -->
-    <div>
-      <div class="panel editorBox" style="padding:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div><span class="small">Shader Editor</span> <span class="small" id="langBadge">GLSL / Haxe</span></div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div class="small">Lines: <span id="lineCount">0</span></div>
-            <div style="width:10px"></div>
-            <div class="small">Chars: <span id="charCount">0</span></div>
+  <div class="app" role="application" aria-label="GODLIKE Shader Fixer Cyber Neon">
+    <div class="left">
+      <div class="panel">
+        <header class="top">
+          <div class="logo" aria-hidden>
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 12c0-4.9706 4.0294-9 9-9s9 4.0294 9 9-4.0294 9-9 9S3 16.9706 3 12z" stroke="#041826" stroke-width="1.2" /><path d="M7 12l3 3 7-7" stroke="#041826" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
+          <div class="title">
+            <h1>GODLIKE Shader Fixer+ <span style="font-size:12px;color:var(--muted)">Cyber-Neon</span></h1>
+            <p class="sub">Fix GLSL & Psych (.hx) fragment shaders — Auto-fix from logs, live preview, comments.</p>
+          </div>
+          <div style="width:120px;text-align:right">
+            <div class="muted">Status</div>
+            <div id="status" style="font-weight:800;color:var(--accent2);">Ready</div>
+          </div>
+        </header>
+
+        <div class="controls">
+          <div class="fileWrap ripple">
+            <button class="btn">Upload Shader</button>
+            <input id="fileInput" type="file" accept=".frag,.hx,.glsl,.txt">
+          </div>
+          <button id="autoFixBtn" class="btn ripple">AUTO-FIX (GODMODE)</button>
+          <button id="fixWithLogsBtn" class="btn ghost ripple">Fix it with Logs</button>
+          <button id="previewBtn" class="btn ghost ripple">Live Preview</button>
+          <button id="downloadBtn" class="btn ripple" style="display:none">Download Fixed</button>
+          <div style="flex:1"></div>
+          <button id="exampleBtn" class="btn ghost ripple">Inject Example</button>
         </div>
 
-        <div style="position:relative">
-          <div class="ln" id="lineNumbers"></div>
-          <div id="code" class="codeArea" contenteditable="true" spellcheck="false" aria-label="Shader code editor"></div>
+        <div class="editorPanel" aria-live="polite">
+          <div class="miniRow">
+            <div class="muted">Editor • Ace • Theme: Cyber — Lines: <span id="linesCount">0</span></div>
+            <div class="muted">Chars: <span id="charsCount">0</span></div>
+          </div>
+          <div id="editorContainer">
+            <div id="aceEditor" aria-label="Shader editor"></div>
+          </div>
+
+          <div class="miniRow">
+            <div style="width:70%;">
+              <div class="progressWrap">
+                <div class="progressBar" id="progressBar"></div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div class="muted" id="miniNote">No actions yet</div>
+            </div>
+          </div>
+
+          <div class="panel logsPanel" style="display:flex; flex-direction:column;">
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+              <div style="flex:1" class="muted">Fix-with-Logs: paste compile log / errors here and press "Apply Fixes".</div>
+              <button id="applyLogFix" class="btn ghost ripple">Apply Fixes</button>
+              <button id="clearLogsInput" class="btn ghost ripple">Clear</button>
+            </div>
+            <textarea id="logsInput" placeholder="Paste shader compile errors here (WebGL or Haxe compiler logs)"></textarea>
+          </div>
         </div>
       </div>
 
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <div class="fileWrap">
-          <button class="btn">Upload Shader</button>
-          <input id="fileIn" type="file" accept=".frag,.hx,.glsl,.txt">
+      <!-- comments panel -->
+      <div class="panel" style="margin-top:12px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+          <div class="muted">Community Comments (local)</div>
+          <div class="muted small">offline • stored in browser</div>
         </div>
-        <button id="fixBtn" class="btn">AUTO-FIX</button>
-        <button id="applyLogFixBtn" class="btn ghost">Fix it with Logs</button>
-        <button id="downloadBtn" class="btn" style="display:none">Download Fixed</button>
-        <div style="flex:1"></div>
-        <button id="injectBtn" class="btn ghost">Inject Example</button>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <div style="flex:1">
-          <div class="progressWrap"><div class="progress" id="progress"></div></div>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input id="commentName" placeholder="name" style="flex:0 0 120px; border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.03); background:#07122a; color:#e9f6ff;">
+          <input id="commentText" placeholder="add a comment..." style="flex:1;border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.03); background:#07122a; color:#e9f6ff;">
+          <button id="postComment" class="btn ripple">Post</button>
         </div>
-        <div style="width:220px;text-align:right"><span id="miniNote" class="small">No actions yet</span></div>
-      </div>
-
-      <div style="margin-top:12px" class="fixLogs panel">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>Logs</strong> <span class="small" style="color:var(--muted)"> (compiler / fixer output)</span></div>
-          <div style="display:flex;gap:8px">
-            <button id="copyLogsForFix" class="btn ghost" style="padding:6px 10px">Copy logs</button>
-            <button id="pasteLogsToFix" class="btn" style="padding:6px 10px">Paste logs → Fix</button>
-          </div>
-        </div>
-        <div id="mainLog" class="log" style="margin-top:8px"></div>
-
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-          <div style="flex:1">
-            <textarea id="logsInput" placeholder="Paste compiler/link logs here (or press 'Paste logs → Fix')"></textarea>
-          </div>
-          <div style="width:140px;display:flex;flex-direction:column;gap:8px">
-            <button id="applyLogsBtn" class="btn">Apply fixes</button>
-            <button id="clearLogsInput" class="btn ghost">Clear</button>
-          </div>
-        </div>
+        <div class="comments" id="commentsList" aria-live="polite"></div>
       </div>
     </div>
 
-    <!-- RIGHT: preview, error log, comments -->
-    <div class="rightCol">
-      <div class="panel previewCard">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div><strong>Interactive Preview</strong> <span class="small" style="color:var(--muted)"> — drag = rotate, pinch/scroll = zoom, click = color offset</span></div>
-          <div style="display:flex;gap:8px">
-            <button id="runPreview" class="btn ghost" style="padding:8px 10px">Compile & Run</button>
-            <button id="stopPreview" class="btn ghost" style="padding:8px 10px">Stop</button>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;height:360px;">
-          <canvas id="glcanvas" width="640" height="360"></canvas>
-        </div>
+    <div class="right">
+      <div class="panel preview">
+        <canvas id="glPreview"></canvas>
       </div>
 
       <div class="panel">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div><strong>Compile & Fix Log</strong></div>
-          <div style="display:flex;gap:8px">
-            <button id="copyLog" class="btn ghost" style="padding:6px 10px">Copy</button>
-            <button id="clearMainLog" class="btn ghost" style="padding:6px 10px">Clear</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="muted">Realtime Output / Fix Log</div>
+          <div style="display:flex; gap:8px;">
+            <button id="copyConsole" class="btn ghost ripple">Copy</button>
+            <button id="clearConsole" class="btn ghost ripple">Clear</button>
           </div>
         </div>
-        <div id="compileLog" class="log"></div>
+        <div class="logBox" id="consoleLog" aria-live="polite"></div>
       </div>
 
       <div class="panel">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div><strong>Comments (Online-ready)</strong> <span class="small" style="color:var(--muted)"> — nickname + live</span></div>
-          <div><button id="connectDemo" class="btn ghost" style="padding:6px 10px">Enable Demo Mode</button></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="muted">Changelog / Fixes Applied</div>
+          <div class="muted small">review before download</div>
         </div>
-
-        <div class="commentForm" style="margin-bottom:8px">
-          <input id="nick" placeholder="nickname (required)" style="flex:0 0 140px">
-          <input id="email" placeholder="email (optional)" style="flex:1">
-        </div>
-        <div class="commentForm" style="margin-bottom:8px">
-          <textarea id="commentText" placeholder="Write a comment or paste logs to share..." style="flex:1;height:68px"></textarea>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px">
-          <button id="postComment" class="btn">Post Comment</button>
-          <button id="clearComment" class="btn ghost">Clear</button>
-        </div>
-
-        <div class="commentList panel" id="commentList" style="max-height:220px;overflow:auto"></div>
-
-        <div class="adminNote" id="firebaseNote">
-          This comment area is online-ready. To connect: paste your Firebase config below in the JS section (FIREBASE_CONFIG) and enable authentication rules or anonymous writes. Demo mode uses local-only mock.
-        </div>
+        <div class="logBox" id="changelog" style="height:160px;"></div>
       </div>
     </div>
   </div>
 
-  <div class="panel footerNote" style="margin-top:12px">
-    <strong>Notes for deploy</strong> — This is a single-file app. To enable the live comment system, add your Firebase v9 config to the FIREBASE_CONFIG constant in the script. The placeholder code uses Firestore; you can replace with Realtime DB if desired.
-  </div>
-</div>
-
-<canvas id="confettiCanvas" class="confetti"></canvas>
+  <footer>Tip: After preview compile errors appear in the console — copy them into the Fix-with-Logs box and press Apply Fixes.</footer>
 
 <script>
-/* =========================
-   CONFIG: Add your Firebase config here to enable online comments.
-   Example:
-   const FIREBASE_CONFIG = {
-     apiKey: "XXX",
-     authDomain: "yourproject.firebaseapp.com",
-     projectId: "yourproject",
-     storageBucket: "yourproject.appspot.com",
-     messagingSenderId: "123456",
-     appId: "1:123:web:abc",
-   };
-   If left null, the comment system will run in local-demo mode (no external network).
-*/
-const FIREBASE_CONFIG = null; // <-- paste your Firebase config object here to enable real online comments
-
-/* =========================
-   Globals & UI refs
-   ========================= */
-const fileIn = document.getElementById('fileIn');
-const codeEl = document.getElementById('code');
-const lineNumbers = document.getElementById('lineNumbers');
-const lineCount = document.getElementById('lineCount');
-const charCount = document.getElementById('charCount');
-const mainLog = document.getElementById('mainLog');
-const compileLog = document.getElementById('compileLog');
-const progress = document.getElementById('progress');
-const statusLabel = document.getElementById('statusLabel');
-
-const fixBtn = document.getElementById('fixBtn');
-const applyLogsBtn = document.getElementById('applyLogsBtn');
-const applyLogFixBtn = document.getElementById('applyLogFixBtn');
-const logsInput = document.getElementById('logsInput');
-const copyLogsForFix = document.getElementById('copyLogsForFix');
-const pasteLogsToFix = document.getElementById('pasteLogsToFix');
-const copyLogBtn = document.getElementById('copyLog');
-const clearMainLogBtn = document.getElementById('clearMainLog');
-const downloadBtn = document.getElementById('downloadBtn');
-const injectBtn = document.getElementById('injectBtn');
-
-const runPreview = document.getElementById('runPreview');
-const stopPreview = document.getElementById('stopPreview');
-
-const glcanvas = document.getElementById('glcanvas');
-const confettiCanvas = document.getElementById('confettiCanvas');
-
-const nickInput = document.getElementById('nick');
-const emailInput = document.getElementById('email');
-const commentText = document.getElementById('commentText');
-const postComment = document.getElementById('postComment');
-const clearComment = document.getElementById('clearComment');
-const commentList = document.getElementById('commentList');
-const connectDemo = document.getElementById('connectDemo');
-
-let currentFilename = '';
-let fixedShaderText = '';
-let compileErrors = '';
-let demoCommentsMode = true; // fallback to local if no firebase config
-let commentsLocal = []; // local cache for demo mode
-
-/* =========================
-   Helpers: logger, progress, lines
-   ========================= */
-function logMain(msg, level='ok'){
-  const t = new Date().toLocaleTimeString();
-  mainLog.textContent = `${t} [${level.toUpperCase()}] ${msg}\n` + mainLog.textContent;
-}
-function logCompile(msg, level='ok'){
-  const t = new Date().toLocaleTimeString();
-  compileLog.textContent = `${t} [${level.toUpperCase()}] ${msg}\n` + compileLog.textContent;
-  compileErrors = compileLog.textContent;
-}
-function setProgress(p){ progress.style.width = p + '%'; }
-function setStatus(s){ statusLabel.textContent = 'Status: ' + s; }
-function updateLineNumbers(){
-  const text = codeEl.innerText.replace(/\t/g,'    ');
-  const lines = text.split('\n');
-  let html = '';
-  for(let i=1;i<=lines.length;i++) html += i + '\n';
-  lineNumbers.textContent = html;
-  lineCount.textContent = lines.length;
-  charCount.textContent = text.length;
-}
-
-/* minimal syntax highlight without breaking caret too much */
-function applyMinimalHighlight(){
-  const txt = codeEl.innerText;
-  let html = txt
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/(\/\/.*?$)/gm, '<span style="color:#8f99a6;font-style:italic">$1</span>')
-    .replace(/(\b\d+(\.\d+)?\b)/g, '<span style="color:#a5ffc9">$1</span>')
-    .replace(/\b(void|float|vec2|vec3|vec4|uniform|precision|if|else|for|while|return|main|varying|attribute|in|out|sampler2D|gl_FragColor)\b/g, '<span style="color:#7ec7ff">$1</span>')
-    .replace(/(\b[a-zA-Z_]\w*(?=\())/g, '<span style="color:#ffd88e">$1</span>');
-  codeEl.innerHTML = html;
-  placeCaretAtEnd(codeEl);
-}
-function placeCaretAtEnd(el){
-  el.focus();
-  if (typeof window.getSelection != "undefined" && typeof document.createRange != "undefined") {
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-}
-
-/* seed editor with example */
-codeEl.innerText = `// Example interactive shader
+/* ------------------------
+   Editor (Ace) Setup
+   ------------------------ */
+const editor = ace.edit("aceEditor", {
+  mode: "ace/mode/glsl",
+  selectionStyle: "text",
+  theme: "ace/theme/dracula",
+  fontSize: 13,
+  showPrintMargin: false,
+  useWorker: false
+});
+editor.session.setOption("useWrapMode", true);
+editor.session.setTabSize(2);
+editor.session.setUseSoftTabs(true);
+editor.setValue(`// Paste your fragment shader here
+// Example demo shader
 precision mediump float;
 uniform float uTime;
 uniform vec2 uResolution;
-uniform float uRotate;
-uniform float uZoom;
-uniform float uColorOffset;
-void main(){
-  vec2 uv = (gl_FragCoord.xy / uResolution.xy) - 0.5;
-  float cr = cos(uRotate), sr = sin(uRotate);
-  mat2 R = mat2(cr, -sr, sr, cr);
-  uv = R * uv * uZoom;
-  float r = length(uv);
-  vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2+uColorOffset,4));
-  col *= smoothstep(1.2, 0.0, r);
-  gl_FragColor = vec4(col,1.0);
-}`;
-updateLineNumbers();
 
-/* =========================
+void main(){
+  vec2 uv = gl_FragCoord.xy / uResolution.xy;
+  vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx + vec3(0,2,4));
+  gl_FragColor = vec4(col,1.0);
+}`, -1);
+
+function updateCounts(){
+  const text = editor.getValue();
+  document.getElementById('linesCount').innerText = text.split('\\n').length;
+  document.getElementById('charsCount').innerText = text.length;
+}
+editor.session.on('change', ()=>{
+  updateCounts();
+  setMiniNote('Editing');
+});
+updateCounts();
+
+/* ------------------------
+   Utilities & state
+   ------------------------ */
+const consoleLog = document.getElementById('consoleLog');
+const changelogEl = document.getElementById('changelog');
+const logsInput = document.getElementById('logsInput');
+const progressBar = document.getElementById('progressBar');
+const statusEl = document.getElementById('status');
+let fixedShaderText = '';
+let currentFilename = 'fixed_shader.frag';
+
+function logConsole(msg, type='info'){
+  const line = document.createElement('div');
+  line.className = 'logLine ' + (type==='err' ? 'err' : (type==='ok' ? 'ok' : ''));
+  const time = new Date().toLocaleTimeString();
+  line.textContent = `[${time}] ${msg}`;
+  consoleLog.prepend(line);
+}
+function logChange(msg){
+  const line = document.createElement('div');
+  line.textContent = msg;
+  changelogEl.prepend(line);
+}
+
+function setProgress(p){
+  progressBar.style.width = p + '%';
+}
+function setMiniNote(t){
+  document.getElementById('miniNote').innerText = t;
+}
+function setStatus(t){ statusEl.innerText = t; }
+
+/* ------------------------
    File upload
-   ========================= */
-document.querySelector('.fileWrap input[type=file]').addEventListener('change', async (e)=>{
-  const f = e.target.files[0];
+   ------------------------ */
+document.getElementById('fileInput').addEventListener('change', async (ev)=>{
+  const f = ev.target.files[0];
   if(!f) return;
   currentFilename = f.name;
   const text = await f.text();
-  codeEl.innerText = text;
-  updateLineNumbers();
-  logMain('Loaded file: ' + f.name);
-  setProgress(6);
+  editor.setValue(text, -1);
+  updateCounts();
+  logConsole('Loaded file: ' + f.name, 'ok');
 });
 
-/* =========================
-   Fixer Engine (smart heuristics)
-   - this is the heart of "auto-fix" and "fix with logs"
-   ========================= */
-function smartFixShader(code){
-  setStatus('Auto-fixing');
-  setProgress(5);
-  logMain('Starting smart fix pass');
-  let out = code.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-
-  // 1) Ensure precision
-  if(!/precision\s+(lowp|mediump|highp)\s+float\s*;/.test(out)){
-    out = 'precision mediump float;\n' + out;
-    logMain('Inserted precision mediump float;');
+/* ------------------------
+   Helper: simple safe compile fixer functions
+   ------------------------ */
+function ensurePrecision(code){
+  if(!/precision\\s+(lowp|mediump|highp)\\s+float\\s*;/.test(code)){
+    logChange('Inserted precision mediump float;');
+    return 'precision mediump float;\\n' + code;
   }
-  setProgress(18);
+  return code;
+}
 
-  // 2) Add common Psych uniforms if missing
-  const uniforms = [
-    {rx:/\buniform\s+float\s+uTime\b, decl:'uniform float uTime;'},
-    {rx:/\buniform\s+vec2\s+uResolution\b, decl:'uniform vec2 uResolution;'},
-    {rx:/\buniform\s+sampler2D\s+uSampler\b, decl:'uniform sampler2D uSampler;'},
-    {rx:/\buniform\s+float\s+uRotate\b, decl:'uniform float uRotate;'},
-    {rx:/\buniform\s+float\s+uZoom\b, decl:'uniform float uZoom;'},
-    {rx:/\buniform\s+float\s+uColorOffset\b, decl:'uniform float uColorOffset;'}
-  ];
-  let added=0;
-  uniforms.forEach(u=>{
-    if(!u.rx.test(out)){ out = u.decl + '\n' + out; added++; }
+function ensurePsychUniforms(code){
+  const declares = [];
+  if(!/uniform\\s+float\\s+uTime\\b/.test(code)){ declares.push('uniform float uTime;'); }
+  if(!/uniform\\s+vec2\\s+uResolution\\b/.test(code)){ declares.push('uniform vec2 uResolution;'); }
+  if(!/uniform\\s+sampler2D\\s+uSampler\\b/.test(code)){ declares.push('uniform sampler2D uSampler;'); }
+  if(declares.length){
+    logChange('Added uniforms: ' + declares.join(' '));
+    return declares.join('\\n') + '\\n' + code;
+  }
+  return code;
+}
+
+function replaceDeprecatedTexture(code){
+  if(/texture2D\\(/.test(code)){
+    logChange('Replaced texture2D() -> texture() for compatibility');
+    return code.replace(/texture2D\\(/g,'texture(');
+  }
+  return code;
+}
+
+function smartSemicolons(code){
+  // only add semicolons to lines that likely need them (uniforms, assignments)
+  const lines = code.split('\\n');
+  for(let i=0;i<lines.length;i++){
+    let t = lines[i].trim();
+    if(!t) continue;
+    if(t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.startsWith('#')) continue;
+    if(/\\b(if|for|while|else|struct|precision|void|return)\\b/.test(t)) continue;
+    if(/[;,{]$/.test(t)) continue;
+    if(/=/.test(t) && !/==/.test(t)){
+      // add semicolon if looks like assignment or declaration
+      lines[i] = lines[i] + ';';
+    } else if(/^(uniform|attribute|varying|const|in|out)\\b/.test(t) && !t.endsWith(';')){
+      lines[i] = lines[i] + ';';
+    }
+  }
+  logChange('Smart semicolons pass applied');
+  return lines.join('\\n');
+}
+
+function guardDivisionByZero(code){
+  // naive: replace "/ var" with "/ max(var, 1e-6)" for simple variable cases
+  // avoid numbers: if divisor starts with digit, skip
+  const out = code.replace(/\\/\\s*\\/\\s*\\(?([a-zA-Z_][\\w\\.]*)/g, function(_, g1){
+    if(/^\\d/.test(g1)) return '/ ' + g1;
+    return '/ max(' + g1 + ', 0.000001)';
   });
-  if(added) logMain(`Added ${added} common uniform(s)`);
-  setProgress(30);
-
-  // 3) Replace deprecated texture2D with texture
-  if(/texture2D\(/.test(out)){
-    out = out.replace(/texture2D\(/g,'texture(');
-    logMain('Replaced texture2D() -> texture()');
-  }
-  setProgress(42);
-
-  // 4) Smart semicolon insertion (only where safe)
-  out = out.split('\n').map(ln=>{
-    const t = ln.trim();
-    if(!t) return ln;
-    if(t.startsWith('//')||t.startsWith('/*')||t.startsWith('*')||t.startsWith('#')) return ln;
-    if(/\)\s*{/.test(t) || /\{$/.test(t) || /\}$/.test(t)) return ln;
-    if(/[;,\)\{\}]$/.test(t)) return ln;
-    if(/^(uniform|attribute|varying|in|out|const)\b/.test(t) && !t.endsWith(';')) return ln + ';';
-    if(/=/.test(t) && !/==/.test(t) && !t.endsWith(';')) return ln + ';';
-    return ln;
-  }).join('\n');
-  logMain('Smart semicolons pass');
-  setProgress(56);
-
-  // 5) Guard divisions by zero (simple heuristic)
-  out = out.replace(/\/\s*\(?([a-zA-Z_]\w*(?:\.[xyzw]{1,4})?)(\)?)/g, (m,g1,g2)=>{
-    if(/^\d/.test(g1)) return '/' + g1 + g2;
-    return '/ max(' + g1 + ', 0.000001)' + g2;
-  });
-  logMain('Inserted division guards where identified');
-  setProgress(68);
-
-  // 6) Close unbalanced braces/parentheses
-  const opens = (out.match(/\{/g)||[]).length;
-  const closes = (out.match(/\}/g)||[]).length;
-  if(opens > closes){ out += '\n' + '}'.repeat(opens - closes); logMain(`Auto-closed ${opens-closes} missing brace(s)`); }
-  const opar = (out.match(/\(/g)||[]).length;
-  const cpar = (out.match(/\)/g)||[]).length;
-  if(opar > cpar){ out += ')'.repeat(opar - cpar); logMain(`Auto-closed ${opar-cpar} missing parenthesis`); }
-  setProgress(78);
-
-  // 7) Replace literal 'undefined' or common placeholders
-  out = out.replace(/\bundefined\b/g,'0.0');
-  out = out.replace(/\bNULL\b/g,'0.0');
-  logMain('Replaced undefined/NULL placeholders');
-
-  // 8) Fix obvious type mismatches: vecX = float -> vecX(vec)
-  out = out.replace(/\b(vec[234])\s+([a-zA-Z_]\w*)\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*;/g, '$1 $2 = $1($3);');
-  setProgress(88);
-
-  // 9) Ensure a main() exists
-  if(!/\bvoid\s+main\s*\(/.test(out)){
-    out += '\nvoid main(){ gl_FragColor = vec4(0.0,0.0,0.0,1.0); }';
-    logMain('Appended safe main() because none found');
-  }
-
-  setProgress(100);
-  setTimeout(()=>setProgress(0),700);
-  logMain('Smart fix pass complete');
-  fixedShaderText = out;
+  logChange('Division-by-zero guards inserted (best-effort)');
   return out;
 }
 
-/* =========================
-   Fix with Logs: parse log & fix
-   - parse common shader compiler errors and apply fixes heuristically
-   ========================= */
-function parseErrorsAndFix(code, logsText){
-  setStatus('Fixing (logs)');
-  setProgress(6);
-  logMain('Parsing logs to derive fixes...');
+/* ------------------------
+   GODMODE fixer (runs full pass)
+   ------------------------ */
+function godmodeFix(code){
+  setStatus('Fixing (GODMODE)…');
+  setProgress(10);
+  logConsole('Starting GODMODE fix pass', 'ok');
 
-  // Basic parsing: gather error lines (common formats)
-  const lines = logsText.split('\n').map(l=>l.trim()).filter(Boolean);
-  const errorLines = lines.filter(l => /error|ERROR|Error|failed|unknown/i.test(l));
-  if(errorLines.length === 0){
-    // fallback: include the full logs (user might have pasted raw messages)
-    errorLines.push(...lines);
+  let out = code;
+  out = out.replace(/\\r\\n/g,'\\n').replace(/\\r/g,'\\n');
+  out = ensurePrecision(out); setProgress(22);
+  out = ensurePsychUniforms(out); setProgress(36);
+  out = replaceDeprecatedTexture(out); setProgress(48);
+  out = smartSemicolons(out); setProgress(64);
+  out = guardDivisionByZero(out); setProgress(80);
+
+  // close unbalanced braces/parents
+  const opens = (out.match(/\\{/g)||[]).length;
+  const closes = (out.match(/\\}/g)||[]).length;
+  if(opens > closes){
+    const diff = opens - closes;
+    out += '\\n' + '}'.repeat(diff);
+    logChange(`Auto-closed ${diff} missing brace(s)`);
+  }
+  const op = (out.match(/\\(/g)||[]).length;
+  const cp = (out.match(/\\)/g)||[]).length;
+  if(op > cp){
+    const d = op - cp;
+    out += ')'.repeat(d);
+    logChange(`Auto-closed ${d} missing parenthesis`);
   }
 
-  let patched = code;
+  // replace 'undefined' w/ 0.0
+  if(/\\bundefined\\b/.test(out)){
+    out = out.replace(/\\bundefined\\b/g,'0.0');
+    logChange('Replaced "undefined" -> 0.0');
+  }
 
-  // heuristics map
-  errorLines.forEach(el => {
-    // Missing semicolon (very common)
-    if(/';'|missing ';'|expected ';'/.test(el) || /syntax error.*expected ';'/.test(el)){
-      // attempt to add semicolons to suspicious lines
-      patched = patched.split('\n').map(ln=>{
-        const t = ln.trim();
-        if(!t) return ln;
-        if(t.startsWith('//')||t.startsWith('#')||t.endsWith(';')||t.endsWith('{')||t.endsWith('}')) return ln;
-        if(/[;,\)\{\}]$/.test(t)) return ln;
-        if(/=/.test(t) && !/==/.test(t)) return ln + ';';
-        return ln;
-      }).join('\n');
-      logMain('Applied missing semicolon heuristic from logs');
-    }
+  // ensure main exists
+  if(!/\\bvoid\\s+main\\s*\\(/.test(out)){
+    out += '\\nvoid main(){ gl_FragColor = vec4(0.0); }';
+    logChange('Appended safe main() to avoid compile error');
+  }
 
-    // undeclared identifier
-    let m = el.match(/'(.*?)' : undeclared identifier/);
-    if(m && m[1]){
-      const id = m[1];
-      // guess it's a float or vec2... default to float
-      patched = `uniform float ${id};\n` + patched;
-      logMain(`Declared missing identifier ${id} as uniform float (heuristic)`);
-    }
-
-    // 'assigning integer to vec' or type mismatch
-    if(/cannot convert|assign.*to.*vec/i.test(el)){
-      // try wrapping numeric literals in vec3(...) if appropriate (simple heuristic)
-      patched = patched.replace(/=\s*([0-9]+(?:\.[0-9]+)?)\s*;/g, '= vec3($1);');
-      logMain('Applied simple numeric->vec3 wrapping from logs');
-    }
-
-    // 'texture2D' warnings
-    if(/texture2D\(/.test(el) || /texture\(/.test(el) && patched.includes('texture2D(')){
-      patched = patched.replace(/texture2D\(/g,'texture(');
-      logMain('Converted texture2D->texture based on logs');
-    }
-
-    // 'cannot implicitly convert' errors for int/float
-    if(/implicitly convert/i.test(el)){
-      patched = patched.replace(/\b([0-9]+)\b/g, '$1.0');
-      logMain('Converted integer literals to float literals where ambiguous');
-    }
-
-    // linker errors like "undefined reference to 'main'"
-    if(/undefined reference to .*main|no main function/.test(el.toLowerCase())){
-      if(!/\bvoid\s+main\s*\(/.test(patched)){
-        patched += '\nvoid main(){ gl_FragColor = vec4(0.0,0.0,0.0,1.0); }';
-        logMain('Added fallback main() due to linker errors in logs');
-      }
-    }
-
-    // mismatched braces/parens: if logs mention line numbers, best-effort close
-    if(/unmatched|missing.*brace|missing.*parenth/i.test(el)){
-      const opens = (patched.match(/\{/g)||[]).length;
-      const closes = (patched.match(/\}/g)||[]).length;
-      if(opens>closes){ patched += '\n' + '}'.repeat(opens-closes); logMain('Auto-closed braces after reading logs'); }
-      const opar = (patched.match(/\(/g)||[]).length;
-      const cpar = (patched.match(/\)/g)||[]).length;
-      if(opar>cpar){ patched += ')'.repeat(opar-cpar); logMain('Auto-closed parentheses after reading logs'); }
-    }
-  });
-
-  // Final generic passes
-  patched = smartFixShader(patched); // run the general fixer to ensure consistency
-  setStatus('Fix-with-logs complete');
-  setProgress(0);
-  return patched;
+  setProgress(100);
+  setTimeout(()=>setProgress(0), 700);
+  setStatus('Fixed ✓');
+  logConsole('GODMODE fix pass complete', 'ok');
+  return out;
 }
 
-/* =========================
-   Buttons for Fix / Fix-with-Logs
-   ========================= */
-fixBtn.addEventListener('click', ()=>{
-  try{
-    const src = codeEl.innerText;
-    const fixed = smartFixShader(src);
-    codeEl.innerText = fixed;
-    updateLineNumbers();
-    downloadBtn.style.display = 'inline-block';
-    fixedShaderText = fixed;
-    logCompile('Auto-fix applied successfully');
-    animateConfetti();
-  }catch(e){
-    logCompile('Auto-fix crashed: ' + e.message,'err');
+/* ------------------------
+   Parse compile logs & apply targeted fixes
+   ------------------------ */
+function parseWebGLLog(text){
+  // common WebGL errors look like:
+  // ERROR: 0:45: 'assign' : cannot convert from 'vec4' to 'float'
+  // or: ERROR: 0:12: 'someVar' : undeclared identifier
+  // Haxe compiler logs may differ, include names/line numbers
+  const lines = text.split('\\n').map(l=>l.trim()).filter(Boolean);
+  const parsed = [];
+  for(const l of lines){
+    // try WebGL form
+    let m = l.match(/ERROR:\\s*\\d+:(\\d+):\\s*'([^']+)'\\s*:\\s*(.*)/i);
+    if(m){
+      parsed.push({type:'webgl', line: parseInt(m[1]), token: m[2], msg: m[3], raw: l});
+      continue;
+    }
+    // try format: ERROR: 'assign' : cannot convert from 'vec4' to 'float' at line 45
+    m = l.match(/(\\d+):\\s*(error|warning)/i);
+    if(m){
+      parsed.push({type:'unknown', line: parseInt(m[1]), raw: l});
+      continue;
+    }
+    // haxe/generic undeclared: "someVar was not declared"
+    m = l.match(/undeclared\\s+identifier\\s+'?([a-zA-Z_][\\w]*)'?/i);
+    if(m){
+      parsed.push({type:'undeclared', token: m[1], raw:l});
+    } else {
+      // push line as generic
+      parsed.push({type:'raw', raw:l});
+    }
   }
-});
+  return parsed;
+}
 
-copyLogsForFix.addEventListener('click', ()=>{
-  navigator.clipboard.writeText(compileLog.textContent).then(()=>logMain('Compile log copied to clipboard'));
-});
-
-pasteLogsToFix.addEventListener('click', async ()=>{
-  const txt = await navigator.clipboard.readText().catch(()=>null);
-  if(!txt) return alert('Clipboard empty or permission denied.');
-  logsInput.value = txt;
-  logMain('Pasted clipboard into Logs input');
-});
-
-applyLogsBtn.addEventListener('click', ()=>{
-  const logsText = logsInput.value.trim();
-  if(!logsText) return alert('Paste logs into the input first.');
-  const src = codeEl.innerText;
-  try{
-    const patched = parseErrorsAndFix(src, logsText);
-    codeEl.innerText = patched;
-    updateLineNumbers();
-    downloadBtn.style.display = 'inline-block';
-    logCompile('Applied fixes derived from logs.');
-    animateConfetti();
-  }catch(e){
-    logCompile('Fix-with-logs failed: ' + e.message,'err');
+function applyFixesFromLogs(logText){
+  setStatus('Analyzing logs…');
+  logConsole('Parsing logs for fixes', 'ok');
+  const parsed = parseWebGLLog(logText);
+  if(parsed.length === 0){
+    logConsole('No recognizable errors found in logs', 'err');
+    setStatus('No fixes found');
+    return;
   }
+
+  let code = editor.getValue();
+  const codeLines = code.split('\\n');
+  let fixesApplied = 0;
+
+  for(const entry of parsed){
+    if(entry.type === 'webgl'){
+      const ln = Math.max(1, Math.min(codeLines.length, entry.line));
+      const lineText = codeLines[ln - 1] || '';
+      // analyze message
+      const m1 = entry.msg.match(/cannot convert from\\s+'([a-zA-Z0-9_]+)'\\s+to\\s+'([a-zA-Z0-9_]+)'/i);
+      if(m1){
+        const from = m1[1], to = m1[2];
+        // if vec4 -> float, try replace assignment with .x or length()
+        if(from.startsWith('vec') && to === 'float'){
+          // attempt: replace right-hand-side expression with .x when it's a var or expression (best-effort)
+          // e.g. "float a = something;" where something is vec4 -> change to something.x
+          const assignMatch = lineText.match(/=\\s*([^;]+)/);
+          if(assignMatch){
+            const rhs = assignMatch[1].trim();
+            const replacement = rhs + '.x';
+            codeLines[ln - 1] = lineText.replace(rhs, replacement);
+            logChange(`Line ${ln}: converted ${rhs} -> ${replacement} to satisfy vec->float`);
+            fixesApplied++;
+            continue;
+          }
+        }
+        // other conversions: vec4->vec3 maybe drop .w, try .xyz
+        if(from.startsWith('vec') && to === 'vec3'){
+          const assignMatch = lineText.match(/=\\s*([^;]+)/);
+          if(assignMatch){
+            const rhs = assignMatch[1].trim();
+            const replacement = rhs + '.xyz';
+            codeLines[ln - 1] = lineText.replace(rhs, replacement);
+            logChange(`Line ${ln}: converted ${rhs} -> ${replacement} to match vec3`);
+            fixesApplied++;
+            continue;
+          }
+        }
+        // fallback: add explicit cast comment for manual review
+        logChange(`Line ${ln}: conversion ${from}->${to} detected. Manual review may be required`);
+        continue;
+      }
+
+      // undeclared identifier
+      const m2 = entry.msg.match(/undeclared identifier/i);
+      if(m2 || /undeclared/i.test(entry.msg.toLowerCase())){
+        const name = entry.token || (entry.msg.match(/'([^']+)'/) && RegExp.$1);
+        if(name){
+          // insert a safe declaration above line
+          const decl = `float ${name} = 0.0; // auto-declared by fixer`;
+          codeLines.splice(Math.max(0, ln-1), 0, decl);
+          logChange(`Inserted declaration for '${name}' at line ${Math.max(1, ln)}`);
+          fixesApplied++;
+          continue;
+        }
+      }
+
+      // cannot read property etc: generic -> try no-op
+      // other: try to catch 'assign' 'cannot convert from' inside msg already handled
+    } else if(entry.type === 'undeclared'){
+      const name = entry.token;
+      const decl = `float ${name} = 0.0; // auto-declared by fixer`;
+      codeLines.unshift(decl);
+      logChange(`Inserted top-level declaration for '${name}'`);
+      fixesApplied++;
+    } else {
+      logChange(`Unrecognized log: ${entry.raw}`);
+    }
+  }
+
+  if(fixesApplied > 0){
+    const newCode = codeLines.join('\\n');
+    editor.setValue(newCode, -1);
+    updateCounts();
+    logConsole(`Applied ${fixesApplied} fixes based on logs`, 'ok');
+    setStatus('Fixes applied');
+  } else {
+    logConsole('No automatic fixes could be applied from logs — see changelog for hints', 'err');
+    setStatus('No auto-fixes');
+  }
+}
+
+/* ------------------------
+   Buttons
+   ------------------------ */
+document.getElementById('autoFixBtn').addEventListener('click', ()=>{
+  const src = editor.getValue();
+  changelogEl.innerHTML = ''; // clear previous changelog
+  const fixed = godmodeFix(src);
+  editor.setValue(fixed, -1);
+  updateCounts();
+  document.getElementById('downloadBtn').style.display = 'inline-block';
 });
 
-/* quick "applyLogFixBtn" => copies main compile log into logs input then runs */
-applyLogFixBtn.addEventListener('click', ()=>{
-  logsInput.value = compileLog.textContent;
-  applyLogsBtn.click();
+document.getElementById('fixWithLogsBtn').addEventListener('click', ()=>{
+  // open logs input focus
+  logsInput.focus();
+  setMini('Paste compile logs, then click Apply Fixes');
 });
 
-/* clear logs / copy compile log */
-copyLogBtn.addEventListener('click', ()=>{ navigator.clipboard.writeText(compileLog.textContent).then(()=>logMain('Compile log copied')); });
-clearMainLogBtn.addEventListener('click', ()=>{ compileLog.textContent=''; logMain('Compile log cleared'); });
+document.getElementById('applyLogFix').addEventListener('click', ()=>{
+  const txt = logsInput.value.trim();
+  if(!txt){ logConsole('No logs provided', 'err'); return; }
+  applyFixesFromLogs(txt);
+});
 
-/* inject example + download */
-injectBtn.addEventListener('click', ()=>{
-  const sample = `// Demo: interactive shader
+document.getElementById('clearLogsInput').addEventListener('click', ()=>{
+  logsInput.value = '';
+  logConsole('Logs input cleared');
+});
+
+document.getElementById('previewBtn').addEventListener('click', ()=>{
+  // compile & run shader in preview
+  const shaderSrc = editor.getValue();
+  compileAndPreview(shaderSrc);
+});
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const code = editor.getValue();
+  const blob = new Blob([code], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = currentFilename.endsWith('.frag')||currentFilename.endsWith('.glsl') ? ('fixed-' + currentFilename) : 'fixed_shader.frag';
+  a.click();
+  logConsole('Downloaded fixed shader', 'ok');
+});
+
+document.getElementById('exampleBtn').addEventListener('click', ()=>{
+  const demo = `// Cyber Neon demo
 precision mediump float;
 uniform float uTime;
 uniform vec2 uResolution;
-uniform float uRotate;
-uniform float uZoom;
-uniform float uColorOffset;
+
 void main(){
-  vec2 uv = (gl_FragCoord.xy / uResolution.xy) - 0.5;
-  float cr = cos(uRotate), sr = sin(uRotate);
-  mat2 R = mat2(cr, -sr, sr, cr);
-  uv = R * uv * uZoom;
-  float r = length(uv);
-  vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2+uColorOffset,4));
-  col *= smoothstep(1.2, 0.0, r);
+  vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
+  float d = length(uv);
+  vec3 col = 0.5 + 0.5*cos(uTime + uv.xyx*6.0 + vec3(0,2,4));
+  col *= 1.0/(1.0 + d*3.0);
   gl_FragColor = vec4(col,1.0);
 }`;
-  codeEl.innerText = sample;
-  updateLineNumbers();
-  logMain('Injected example shader');
+  editor.setValue(demo, -1);
+  updateCounts();
+  logConsole('Injected example shader', 'ok');
 });
 
-downloadBtn.addEventListener('click', ()=>{
-  const txt = codeEl.innerText;
-  const blob = new Blob([txt], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = currentFilename ? ('fixed-' + currentFilename) : 'fixed_shader.frag';
-  a.click();
-  URL.revokeObjectURL(url);
-  logMain('Downloaded fixed shader');
-});
-
-/* =========================
-   WebGL preview (interactive uniforms)
-   ========================= */
-const gl = glcanvas.getContext('webgl') || glcanvas.getContext('experimental-webgl');
-if(!gl){
-  logCompile('WebGL not supported in this browser — preview disabled', 'err');
-  runPreview.disabled = true;
+/* ------------------------
+   Comments (localStorage)
+   ------------------------ */
+const commentsKey = 'godlike_shader_comments_v1';
+function loadComments(){
+  const raw = localStorage.getItem(commentsKey);
+  if(!raw) return [];
+  try{ return JSON.parse(raw); } catch(e){ return []; }
 }
-
-let program = null;
-let animReq = null;
-let startTime = performance.now();
-let interaction = { rotation:0, zoom:1, colorOffset:0, dragging:false, lastX:0, lastY:0, pinchDist:0 };
-
-function resizeCanvasToFit(){
-  // fit container width while maintaining current canvas aspect ratio
-  const parent = glcanvas.parentElement;
-  const maxW = Math.min(parent.clientWidth, 720);
-  const aspect = glcanvas.width / (glcanvas.height || 360);
-  // Keep physical pixel sizes reasonable
-  const cssW = Math.floor(Math.min(maxW, window.innerWidth * 0.9));
-  const cssH = Math.floor(cssW / (glcanvas.width / glcanvas.height));
-  glcanvas.style.width = cssW + 'px';
-  glcanvas.style.height = cssH + 'px';
-  glcanvas.width = Math.floor(cssW * devicePixelRatio);
-  glcanvas.height = Math.floor(cssH * devicePixelRatio);
+function saveComments(list){
+  localStorage.setItem(commentsKey, JSON.stringify(list));
 }
-
-function compileAndRun(fragmentSource){
-  if(!gl) return;
-  resizeCanvasToFit();
-  const vsSource = `attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }`;
-  function createShader(type, src){
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
-      const info = gl.getShaderInfoLog(s);
-      gl.deleteShader(s);
-      throw new Error(info);
-    }
-    return s;
+function renderComments(){
+  const list = loadComments();
+  const container = document.getElementById('commentsList');
+  container.innerHTML = '';
+  for(let i=list.length-1;i>=0;i--){
+    const c = list[i];
+    const card = document.createElement('div');
+    card.className = 'commentCard';
+    card.innerHTML = `<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${escapeHtml(c.name||'anon')}</strong><div class="meta">${new Date(c.ts).toLocaleString()}</div></div><div style="margin-top:6px">${escapeHtml(c.msg)}</div></div><div style="display:flex;flex-direction:column;gap:6px"><button data-i="${i}" class="likeBtn">❤ ${c.likes||0}</button><button data-i="${i}" class="delBtn">✖</button></div>`;
+    container.appendChild(card);
   }
+  // bind like & delete
+  container.querySelectorAll('.likeBtn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const idx = parseInt(b.dataset.i);
+      const arr = loadComments();
+      arr[idx].likes = (arr[idx].likes||0) + 1;
+      saveComments(arr);
+      renderComments();
+    });
+  });
+  container.querySelectorAll('.delBtn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const idx = parseInt(b.dataset.i);
+      const arr = loadComments();
+      arr.splice(idx,1);
+      saveComments(arr);
+      renderComments();
+    });
+  });
+}
+document.getElementById('postComment').addEventListener('click', ()=>{
+  const name = document.getElementById('commentName').value || 'anon';
+  const msg = document.getElementById('commentText').value;
+  if(!msg.trim()) return;
+  const arr = loadComments();
+  arr.push({name, msg, ts: Date.now(), likes:0});
+  saveComments(arr);
+  document.getElementById('commentText').value = '';
+  renderComments();
+});
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+renderComments();
 
+/* ------------------------
+   Console copy/clear
+   ------------------------ */
+document.getElementById('copyConsole').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(consoleLog.innerText).then(()=>logConsole('Console copied to clipboard', 'ok'));
+});
+document.getElementById('clearConsole').addEventListener('click', ()=>{
+  consoleLog.innerText = '';
+});
+
+/* ------------------------
+   Quick UI helpers
+   ------------------------ */
+function setMini(s){ document.getElementById('miniNote').innerText = s; }
+
+/* ------------------------
+   WebGL Preview (defensive)
+   ------------------------ */
+const canvas = document.getElementById('glPreview');
+const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+function resizeCanvas(){
+  const w = canvas.clientWidth * devicePixelRatio;
+  const h = canvas.clientHeight * devicePixelRatio;
+  if(canvas.width !== w || canvas.height !== h){
+    canvas.width = w; canvas.height = h;
+  }
+}
+function compileShader(type, source){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, source);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    const info = gl.getShaderInfoLog(s);
+    gl.deleteShader(s);
+    throw new Error(info);
+  }
+  return s;
+}
+let anim = null;
+let program = null;
+let startTime = performance.now();
+
+function compileAndPreview(fragmentSource){
+  if(!gl){
+    logConsole('WebGL not available — preview disabled', 'err');
+    return;
+  }
+  resizeCanvas();
+  setStatus('Compiling preview...');
   try{
-    const vs = createShader(gl.VERTEX_SHADER, vsSource);
-    const fs = createShader(gl.FRAGMENT_SHADER, fragmentSource);
-    if(program){ gl.deleteProgram(program); program = null; }
-    const p = gl.createProgram();
-    gl.attachShader(p, vs);
-    gl.attachShader(p, fs);
-    gl.linkProgram(p);
-    if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
-      const info = gl.getProgramInfoLog(p);
-      gl.deleteProgram(p);
+    // simple vertex shader
+    const vsSrc = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.0,1.0); }';
+    const vs = compileShader(gl.VERTEX_SHADER, vsSrc);
+    const fs = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+    if(program) { gl.deleteProgram(program); program = null; }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+      const info = gl.getProgramInfoLog(prog);
+      gl.deleteProgram(prog);
       throw new Error('Link error: ' + info);
     }
-    program = p;
+    program = prog;
+    setStatus('Preview running');
+    logConsole('Shader compiled & linked successfully', 'ok');
     startTime = performance.now();
-
-    if(animReq) cancelAnimationFrame(animReq);
+    // start rendering loop
+    if(anim) cancelAnimationFrame(anim);
     function render(){
-      resizeCanvasToFit();
-      gl.viewport(0,0,glcanvas.width,glcanvas.height);
+      resizeCanvas();
+      gl.viewport(0,0,canvas.width,canvas.height);
       gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+
       gl.useProgram(program);
-
-      // uniforms
-      const tloc = gl.getUniformLocation(program, 'uTime');
-      const rloc = gl.getUniformLocation(program, 'uResolution');
-      const rotloc = gl.getUniformLocation(program, 'uRotate');
-      const zloc = gl.getUniformLocation(program, 'uZoom');
-      const coloff = gl.getUniformLocation(program, 'uColorOffset');
+      const timeLoc = gl.getUniformLocation(program, 'uTime');
+      const resLoc = gl.getUniformLocation(program, 'uResolution');
       const samplerLoc = gl.getUniformLocation(program, 'uSampler');
-
       const t = (performance.now() - startTime) / 1000;
-      if(tloc) gl.uniform1f(tloc, t);
-      if(rloc) gl.uniform2f(rloc, glcanvas.width / devicePixelRatio, glcanvas.height / devicePixelRatio);
-      if(rotloc) gl.uniform1f(rotloc, interaction.rotation);
-      if(zloc) gl.uniform1f(zloc, interaction.zoom);
-      if(coloff) gl.uniform1f(coloff, interaction.colorOffset);
-
+      if(timeLoc) gl.uniform1f(timeLoc, t);
+      if(resLoc) gl.uniform2f(resLoc, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio);
       if(samplerLoc){
-        const tex = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tex);
+        const tx = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tx);
         gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
-        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(samplerLoc, 0);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tx);
+        gl.uniform1i(samplerLoc, 0);
       }
-
       const verts = new Float32Array([-1,-1,1,-1,-1,1,1,1]);
-      const vbo = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-      gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STREAM_DRAW);
-      const posLoc = gl.getAttribLocation(program, 'aPos');
-      if(posLoc >= 0){
-        gl.enableVertexAttribArray(posLoc);
-        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+      const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+      const pos = gl.getAttribLocation(program, 'aPos');
+      if(pos >= 0){
+        gl.enableVertexAttribArray(pos);
+        gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
       }
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.deleteBuffer(vbo);
-
-      animReq = requestAnimationFrame(render);
+      anim = requestAnimationFrame(render);
     }
     render();
-    logCompile('Compiled & running preview');
-    setStatus('Preview running');
   }catch(e){
-    logCompile('Compile/Link failed: ' + e.message, 'err');
+    // parse compile errors and show them
+    logConsole('Preview compile error: ' + e.message, 'err');
     setStatus('Compile Error');
+    // also push to logsInput for copy/paste convenience
+    logsInput.value = e.message + '\\n' + logsInput.value;
   }
 }
 
-runPreview.addEventListener('click', ()=>{
-  const src = codeEl.innerText;
-  try{ compileAndRun(src); }catch(e){ logCompile('Preview error: ' + e.message,'err'); }
-});
-stopPreview.addEventListener('click', ()=>{
-  if(animReq) cancelAnimationFrame(animReq);
-  if(program) { gl.deleteProgram(program); program = null; }
-  setStatus('Preview stopped');
-});
-
-/* =========================
-   Canvas interaction: drag rotate, wheel/pinch zoom, click colorOffset
-   ========================= */
-glcanvas.addEventListener('pointerdown', (ev)=>{
-  glcanvas.setPointerCapture(ev.pointerId);
-  interaction.dragging = true;
-  interaction.lastX = ev.clientX;
-  interaction.lastY = ev.clientY;
-});
-glcanvas.addEventListener('pointermove', (ev)=>{
-  if(!interaction.dragging) return;
-  const dx = ev.clientX - interaction.lastX;
-  interaction.lastX = ev.clientX;
-  interaction.lastY = ev.clientY;
-  interaction.rotation += (dx / Math.max(glcanvas.clientWidth, glcanvas.clientHeight)) * Math.PI;
-});
-glcanvas.addEventListener('pointerup', (ev)=>{
-  glcanvas.releasePointerCapture(ev.pointerId);
-  interaction.dragging = false;
-});
-glcanvas.addEventListener('pointercancel', ()=>{ interaction.dragging = false; });
-
-glcanvas.addEventListener('wheel', (ev)=>{
-  ev.preventDefault();
-  const d = -ev.deltaY * 0.0018;
-  interaction.zoom = Math.max(0.2, Math.min(6, interaction.zoom * (1 + d)));
-}, {passive:false});
-
-glcanvas.addEventListener('click', ()=>{ interaction.colorOffset += 0.9; });
-
-/* touch pinch handlers */
-glcanvas.addEventListener('touchstart', (ev)=>{
-  if(ev.touches.length === 2){
-    const d = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY);
-    interaction.pinchDist = d;
-  } else if(ev.touches.length === 1){
-    interaction.dragging = true;
-    interaction.lastX = ev.touches[0].clientX;
-    interaction.lastY = ev.touches[0].clientY;
-  }
-}, {passive:true});
-
-glcanvas.addEventListener('touchmove', (ev)=>{
-  if(ev.touches.length === 2 && interaction.pinchDist){
-    const nd = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY);
-    const scale = nd / interaction.pinchDist;
-    interaction.zoom = Math.max(0.2, Math.min(6, interaction.zoom * scale));
-    interaction.pinchDist = nd;
-  } else if(ev.touches.length === 1 && interaction.dragging){
-    const dx = ev.touches[0].clientX - interaction.lastX;
-    interaction.lastX = ev.touches[0].clientX;
-    interaction.rotation += (dx / Math.max(glcanvas.clientWidth, glcanvas.clientHeight)) * Math.PI;
-  }
-}, {passive:true});
-
-glcanvas.addEventListener('touchend', (ev)=>{
-  interaction.pinchDist = null;
-  interaction.dragging = false;
-}, {passive:true});
-
-/* double-tap reset */
-glcanvas.addEventListener('dblclick', ()=>{
-  interaction.rotation = 0; interaction.zoom = 1; interaction.colorOffset = 0;
-});
-
-/* =========================
-   Confetti (visual reward)
-   ========================= */
-confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight;
-const cctx = confettiCanvas.getContext('2d'); let confettiParticles = [];
-function spawnConfetti(){
-  const count = 28;
-  for(let i=0;i<count;i++){
-    confettiParticles.push({
-      x: Math.random()*confettiCanvas.width,
-      y: -20 - Math.random()*200,
-      vx: (Math.random()-0.5)*6,
-      vy: 1 + Math.random()*4,
-      size: 6 + Math.random()*12,
-      rot: Math.random()*360,
-      spin: (Math.random()-0.5)*10,
-      color: ['#ff6b6b','#6ef0a2','#6b3dff','#4ee0ff','#ffd88e'][Math.floor(Math.random()*5)],
-      life: 120 + Math.random()*180
-    });
-  }
-}
-function animateConfetti(){
-  spawnConfetti();
-  function step(){
-    cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
-    for(let i=confettiParticles.length-1;i>=0;i--){
-      const p = confettiParticles[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.rot += p.spin; p.life--;
-      cctx.save();
-      cctx.translate(p.x, p.y);
-      cctx.rotate(p.rot * Math.PI/180);
-      cctx.fillStyle = p.color;
-      cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
-      cctx.restore();
-      if(p.y > confettiCanvas.height + 50 || p.life <= 0) confettiParticles.splice(i,1);
+/* ------------------------
+   Auto-run small debounced preview on edit (optional)
+   ------------------------ */
+let debounceTimer = null;
+editor.session.on('change', ()=>{
+  if(debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(()=>{
+    // keep light: try to compile quickly but don't spam errors
+    // only compile if the code has 'main' - else skip
+    const code = editor.getValue();
+    if(/void\\s+main\\s*\\(/.test(code)) {
+      // try compile silently
+      try{
+        compileAndPreview(code);
+      }catch(e){ /* ignore */ }
     }
-    if(confettiParticles.length>0) requestAnimationFrame(step);
-    else cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
-  }
-  requestAnimationFrame(step);
-}
-
-/* =========================
-   Comments: Online-ready (Firestore) OR demo local
-   - uses Firebase v9 modular SDK if FIREBASE_CONFIG provided.
-   ========================= */
-let firestore = null;
-let firebaseApp = null;
-let commentsUnsub = null;
-
-async function initCommentsOnline(){
-  if(!FIREBASE_CONFIG) return false;
-  try{
-    // load firebase libraries dynamically
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js');
-    const { getFirestore, collection, addDoc, doc, onSnapshot, query, orderBy, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
-
-    firebaseApp = initializeApp(FIREBASE_CONFIG);
-    firestore = getFirestore(firebaseApp);
-
-    // subscribe to comments collection (live)
-    const q = query(collection(firestore, 'shader_comments'), orderBy('ts','desc'));
-    commentsUnsub = onSnapshot(q, (snap) => {
-      commentList.innerHTML = '';
-      snap.forEach(docSnap => {
-        const d = docSnap.data();
-        appendCommentToUI(d.nick || 'anon', d.text || '', d.ts ? new Date(d.ts.toMillis()).toLocaleString() : new Date().toLocaleString());
-      });
-    });
-
-    demoCommentsMode = false;
-    logMain('Connected to Firestore for comments (live).');
-    return true;
-  }catch(e){
-    console.warn('Firebase init failed', e);
-    logMain('Failed to init Firebase — falling back to demo local comments.', 'warn');
-    demoCommentsMode = true;
-    return false;
-  }
-}
-
-async function postCommentOnline(nick, email, text){
-  if(!firestore) return false;
-  try{
-    const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
-    await addDoc(collection(firestore, 'shader_comments'), {
-      nick, email, text, ts: serverTimestamp()
-    });
-    return true;
-  }catch(e){
-    console.warn('postCommentOnline failed', e);
-    return false;
-  }
-}
-
-function appendCommentToUI(nick, text, time){ 
-  const c = document.createElement('div');
-  c.className = 'comment';
-  c.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${escapeHtml(nick)}</strong><span class="small">${escapeHtml(time)}</span></div><div style="margin-top:6px;white-space:pre-wrap">${escapeHtml(text)}</div>`;
-  commentList.prepend(c);
-}
-
-function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-
-/* Demo local comments */
-function addLocalComment(nick, email, text){
-  const now = new Date();
-  commentsLocal.unshift({nick, email, text, ts: now});
-  // render
-  appendCommentToUI(nick, text, now.toLocaleString());
-}
-
-/* connect demo mode if FIREBASE_CONFIG is absent; show instructions */
-connectDemo.addEventListener('click', async ()=>{
-  if(FIREBASE_CONFIG){
-    const ok = await initCommentsOnline();
-    if(ok) { alert('Connected to Firestore. Comments are live.'); return; }
-  }
-  demoCommentsMode = true;
-  alert('Demo comments enabled — local only. To enable online live comments paste FIREBASE_CONFIG into the script.');
+  }, 850);
 });
 
-/* post comment button */
-postComment.addEventListener('click', async ()=>{
-  const nick = (nickInput.value || '').trim() || 'anon';
-  const email = (emailInput.value || '').trim();
-  const text = (commentText.value || '').trim();
-  if(!text) return alert('Write something to post.');
-  if(!demoCommentsMode && FIREBASE_CONFIG && firestore){
-    const ok = await postCommentOnline(nick, email, text);
-    if(ok) { commentText.value=''; logMain('Comment posted (online)'); return; }
-    // fallback
-    logMain('Failed to post online — storing locally', 'warn');
-  }
-  addLocalComment(nick, email, text);
-  commentText.value='';
-  logMain('Comment posted (local demo)');
+/* ------------------------
+   Apply Fixes flow: combine log-based + full GODMODE
+   ------------------------ */
+document.getElementById('fixWithLogsBtn').addEventListener('click', ()=>{
+  // focus logs area
+  logsInput.focus();
 });
 
-/* clear comment UI */
-clearComment.addEventListener('click', ()=>{ nickInput.value=''; emailInput.value=''; commentText.value=''; });
-
-/* init comments mode: attempt to connect if config present; otherwise demo */
-(async ()=>{
-  if(FIREBASE_CONFIG){
-    await initCommentsOnline();
-    if(demoCommentsMode){
-      // show sample local comments for demo
-      addLocalComment('System', '', 'Connected: demo local comments. Paste your Firebase config to enable live comments.');
-    }
-  } else {
-    addLocalComment('System', '', 'Demo mode: comments are local-only. Paste FIREBASE_CONFIG in the script to enable live comments.');
+document.getElementById('applyLogFix').addEventListener('click', ()=>{
+  const logs = logsInput.value;
+  if(!logs.trim()){
+    logConsole('No logs to parse', 'err');
+    return;
   }
-})();
+  logConsole('Applying fixes from logs...', 'ok');
+  applyFixesFromLogs(logs);
+  // after applying, offer to run GODMODE as safety (non-blocking)
+  setTimeout(()=>{
+    const code = editor.getValue();
+    const patched = godmodeFix(code);
+    editor.setValue(patched, -1);
+    updateCounts();
+  }, 250);
+});
 
-/* =========================
-   Utility: apply highlighting and update counters periodically
-   ========================= */
-setInterval(()=>{ try{ applyMinimalHighlight(); updateLineNumbers(); }catch(e){} }, 1500);
+/* ------------------------
+   small helpers
+   ------------------------ */
+function updateCounts(){ updateCounts = updateCounts; /* placeholder so linters don't complain */ }
+updateCounts = function(){ const text = editor.getValue(); document.getElementById('linesCount').innerText = text.split('\\n').length; document.getElementById('charsCount').innerText = text.length; };
+updateCounts();
 
-/* expose a simple API in the console for advanced users */
-window.GODFIX = {
-  smartFixShader,
-  parseErrorsAndFix,
-  compileAndRun,
-  getCompileLog: () => compileLog.textContent,
-  getMainLog: () => mainLog.textContent
-};
-
-/* final small polish logs */
-logMain('GODLIKE Shader Fixer loaded — paste your shader or upload a .frag/.hx file.');
-logCompile('Compile log ready.');
+/* initial status */
+setStatus('Ready');
+logConsole('GODLIKE Shader Fixer+ ready — paste shader and press AUTO-FIX or Live Preview.', 'ok');
 
 </script>
 </body>
